@@ -14,7 +14,7 @@
 ### 1. 上传到服务器
 
 ```bash
-scp -r scripts/ user@server:~/ops-scripts
+scp -r linux-ops-kit/ user@server:~/ops-scripts
 ```
 
 ### 2. 运行
@@ -36,7 +36,7 @@ alias ops='cd ~/ops-scripts && ./ops.sh'
 ## 目录结构
 
 ```
-scripts/
+linux-ops-kit/
 ├── ops.sh          # 主入口（运行这个！）
 ├── lib/
 │   └── common.sh   # 核心函数库

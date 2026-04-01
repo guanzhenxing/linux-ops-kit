@@ -51,8 +51,7 @@ linux-ops-kit/
 │   └── help.sh     # 命令帮助
 ├── data/           # 数据文件
 │   └── data.json   # Linux命令数据库
-├── install/        # 安装脚本
-└── config/         # 配置模板
+└── docs/           # 文档
 ```
 
 ## 主菜单
@@ -79,12 +78,12 @@ linux-ops-kit/
 | 核心函数库 | ✅ 完成 | 颜色输出、系统检测、通用函数 |
 | check.sh | ✅ 完成 | 系统信息/CPU/内存/磁盘/服务检查 |
 | help.sh | ✅ 完成 | 搜索命令/列出所有/命令详情/更新数据 |
-| service.sh | 🚧 开发中 | 服务启动/停止/重启/查看 |
-| log.sh | 🚧 开发中 | 快速查看各服务日志 |
-| network.sh | 🚧 开发中 | 端口/连通性/抓包 |
-| disk.sh | 🚧 开发中 | 空间检查/清理/挂载 |
-| monitor.sh | 🚧 开发中 | 监控告警 |
-| install.sh | 🚧 开发中 | Nginx/Docker/SSL证书安装 |
+| service.sh | ✅ 完成 | 服务启动/停止/重启/自启动管理 |
+| log.sh | ✅ 完成 | 系统日志/服务日志/实时追踪/搜索 |
+| network.sh | ✅ 完成 | 端口检查/连通性/防火墙/DNS |
+| disk.sh | ✅ 完成 | 使用分析/清理/挂载/LVM管理 |
+| monitor.sh | ✅ 完成 | 实时监控面板/阈值告警/资源报告 |
+| install.sh | ✅ 完成 | 软件安装/SSL证书/配置模板/环境栈部署 |
 
 ## 核心函数 (lib/common.sh)
 
@@ -152,16 +151,99 @@ b. 返回主菜单
 - 命令详情从 GitHub 实时获取 MD 文档
 - 数据来源于 [jaywcjlove/linux-command](https://github.com/jaywcjlove/linux-command) 项目（600+ 命令）
 
+### service.sh - 服务管理 ✅
+
+```
+=== 服务管理 ===
+
+1. 服务概览      - 扫描 15 种常见服务的运行状态
+2. 管理单个服务  - 启动/停止/重启/查看状态/自启动
+0. 返回主菜单
+```
+
+**支持的服务**：Nginx、Apache、MySQL、PostgreSQL、Docker、Redis、MongoDB、PHP-FPM、SSH、Cron、Firewalld、Elasticsearch、Memcached、RabbitMQ、etcd、Kubelet
+**兼容性**：自动适配 systemd/sysvinit，跨发行版服务名差异（如 apache2/httpd）
+
+### log.sh - 日志查看 ✅
+
+```
+=== 日志查看 ===
+
+1. 系统日志      - journalctl/dmesg/syslog 快速查看
+2. 服务日志      - 预置 10 种服务的日志路径
+3. 实时追踪      - tail -f 实时查看日志
+4. 日志搜索      - 关键词搜索 + 时间范围过滤
+0. 返回主菜单
+```
+
+**预置服务日志**：Nginx、Apache、MySQL、PostgreSQL、Docker、Redis、MongoDB、PHP-FPM、SSHD
+
+### network.sh - 网络诊断 ✅
+
+```
+=== 网络诊断 ===
+
+1. 端口检查      - 监听端口/端口占用/活动连接
+2. 网络信息      - 接口IP/路由表/DNS/公网IP
+3. 连通测试      - Ping/Traceroute/端口连通性
+4. 防火墙管理    - 自动检测 ufw/firewalld/iptables
+0. 返回主菜单
+```
+
+**兼容性**：优先使用 `ss`，回退 `netstat`；支持 `ufw`/`firewalld`/`iptables` 自动切换
+
+### disk.sh - 磁盘管理 ✅
+
+```
+=== 磁盘管理 ===
+
+1. 使用分析      - 分区/大文件/目录排行/Inode
+2. 磁盘清理      - 包缓存/日志/临时文件/Docker/旧内核
+3. 挂载管理      - 查看/挂载/卸载/fstab 编辑
+4. LVM 管理      - PV/VG/LV 查看/扩展
+0. 返回主菜单
+```
+
+**清理功能**：支持一键清理全部，显示清理前后磁盘对比
+
+### monitor.sh - 监控告警 ✅
+
+```
+=== 监控告警 ===
+
+1. 实时监控面板  - 2秒刷新，CPU/内存/磁盘/网络/TOP5
+2. 阈值告警      - 查看/修改阈值，一次性检查
+3. 资源报告      - 生成完整系统报告到 /tmp
+0. 返回主菜单
+```
+
+**实时面板**：使用 `tput` 无闪烁刷新，进度条可视化，彩色告警（绿/黄/红）
+
+### install.sh - 快捷安装 ✅
+
+```
+=== 快捷安装 ===
+
+1. 常用软件      - Nginx/Docker/Node.js/Git/MySQL/Redis/PostgreSQL/MongoDB
+2. SSL 证书      - 申请/续期/查看/撤销（certbot）
+3. 配置模板      - Nginx/Docker Compose 模板
+4. 环境部署      - LNMP/LEMP/Docker 开发环境一键部署
+0. 返回主菜单
+```
+
+**配置模板**：Nginx 静态站/反向代理/HTTPS、Docker 镜像加速、Docker Compose（Web/WordPress/LNMP）
+
 ## 开发路线
 
 - [x] 第一阶段：框架搭建
 - [x] 第二阶段：系统检查模块 (check.sh)
-- [ ] 第三阶段：服务管理、日志查看
-- [ ] 第四阶段：网络诊断、磁盘管理
-- [ ] 第五阶段：监控告警、安装脚本、配置模板
+- [x] 第三阶段：服务管理、日志查看
+- [x] 第四阶段：网络诊断、磁盘管理
+- [x] 第五阶段：监控告警、安装脚本、配置模板
 
 ## 版本
 
+- **v2.0.0** - 全部 8 个模块实现完成（服务管理/日志查看/网络诊断/磁盘管理/监控告警/快捷安装）
 - **v1.2.0** - help.sh 模块完成（搜索/列表/详情/更新）
 - **v1.1.0** - check.sh 模块完成
 - **v1.0.0** - 框架搭建完成

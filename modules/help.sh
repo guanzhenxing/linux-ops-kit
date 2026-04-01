@@ -8,6 +8,47 @@ DATA_FILE="${SCRIPT_DIR}/../data/data.json"
 DATA_URL="https://raw.githubusercontent.com/jaywcjlove/linux-command/master/dist/data.json"
 MD_BASE_URL="https://raw.githubusercontent.com/jaywcjlove/linux-command/master/command"
 
+# ==================== 依赖检查 ====================
+
+check_jq() {
+    if command_exists jq; then
+        return 0
+    fi
+
+    print_warn "此模块需要 jq 工具来解析 JSON 数据"
+    read -p "是否现在安装 jq? [y/N]: " install_jq
+
+    if [ "$install_jq" = "y" ] || [ "$install_jq" = "Y" ]; then
+        local os_type=$(detect_os)
+        print_info "正在安装 jq..."
+
+        case $os_type in
+            ubuntu|debian)
+                apt-get update -qq && apt-get install -y -qq jq
+                ;;
+            centos|rhel)
+                yum install -y -q jq 2>/dev/null || dnf install -y -q jq 2>/dev/null
+                ;;
+            *)
+                print_error "不支持的系统，请手动安装 jq"
+                return 1
+                ;;
+        esac
+
+        if command_exists jq; then
+            print_success "jq 安装成功!"
+            return 0
+        else
+            print_error "jq 安装失败，请手动安装后重试"
+            return 1
+        fi
+    else
+        print_error "缺少 jq 依赖，无法使用此模块"
+        pause
+        return 1
+    fi
+}
+
 # ==================== 1. 搜索命令 ====================
 
 search_command() {
@@ -193,6 +234,11 @@ update_data() {
 # ==================== 主循环 ====================
 
 main() {
+    # 检查 jq 依赖
+    if ! check_jq; then
+        return 1
+    fi
+
     # 检查数据文件
     if [ ! -f "$DATA_FILE" ]; then
         print_warn "数据文件不存在，请先更新数据"

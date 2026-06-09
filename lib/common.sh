@@ -204,3 +204,108 @@ human_readable() {
 
     echo "${bytes} ${units[$unit]}"
 }
+
+# ==================== UX 输出函数（Init 模块专用） ====================
+
+# 步骤开始
+# 用法: print_step 1 10 "系统更新"
+print_step() {
+    local current=$1
+    local total=$2
+    local desc=$3
+    echo -e "\n${BLUE}${BOLD}[${current}/${total}]${NC} ${CYAN}正在执行:${NC} ${desc}..."
+}
+
+# 步骤结果
+# 用法: print_result "ok" "系统更新" "完成"
+#       print_result "fail" "系统更新" "apt update 返回 100"
+#       print_result "skip" "Swap" "已存在 2G swap"
+print_result() {
+    local status=$1
+    local step=$2
+    local detail=$3
+    case $status in
+        ok|success)
+            echo -e "  ${GREEN}✓${NC} ${step} — ${detail}"
+            ;;
+        fail|error)
+            echo -e "  ${RED}✗${NC} ${step} — ${detail}"
+            ;;
+        skip|skipped)
+            echo -e "  ${YELLOW}⊘${NC} ${step} — ${detail}"
+            ;;
+        *)
+            echo -e "  ${MAGENTA}→${NC} ${step} — ${detail}"
+            ;;
+    esac
+}
+
+# 执行计划标题
+print_plan_header() {
+    echo -e "\n${BOLD}========================================${NC}"
+    echo -e "${BOLD}  linux-ops-kit init v${VERSION:-2.0.0} — 执行计划${NC}"
+    echo -e "${BOLD}========================================${NC}\n"
+}
+
+# 执行报告标题
+print_report_header() {
+    echo -e "\n${BOLD}========================================${NC}"
+    echo -e "${BOLD}  linux-ops-kit init — 执行完成${NC}"
+    echo -e "${BOLD}========================================${NC}\n"
+}
+
+# 分隔线
+print_separator() {
+    echo -e "${BLUE}$(printf '━%.0s' {1..50})${NC}"
+}
+
+# 简洁确认（默认 No）
+# 用法: if confirm_yes "启用 SSH 加固?"; then ... fi
+confirm_yes() {
+    local prompt="$1 [y/N]: "
+    local answer
+    read -p "$prompt" answer
+    [ "$answer" = "y" ] || [ "$answer" = "Y" ]
+}
+
+# 默认 Yes 的确认
+# 用法: if confirm_no "安装 Docker?"; then ... fi
+confirm_no() {
+    local prompt="$1 [Y/n]: "
+    local answer
+    read -p "$prompt" answer
+    [ -z "$answer" ] || [ "$answer" = "y" ] || [ "$answer" = "Y" ]
+}
+
+# 带默认值的输入
+# 用法: name=$(input_with_default "用户名" "admin")
+input_with_default() {
+    local prompt="$1"
+    local default="$2"
+    local answer
+    read -p "${prompt} [默认: ${default}]: " answer
+    echo "${answer:-$default}"
+}
+
+# 菜单选择
+# 用法: choice=$(select_option "如何导入 SSH Key?" "从 GitHub 拉取" "从 GitLab 拉取" "手动粘贴公钥")
+select_option() {
+    local prompt="$1"
+    shift
+    local options=("$@")
+    local count=${#options[@]}
+
+    echo -e "\n${CYAN}${prompt}${NC}"
+    for i in "${!options[@]}"; do
+        echo "  $((i+1)). ${options[$i]}"
+    done
+
+    while true; do
+        read -p "请选择 [1-${count}]: " choice
+        if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "$count" ]; then
+            echo "$choice"
+            return
+        fi
+        print_error "无效选择，请输入 1-${count}"
+    done
+}

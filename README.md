@@ -15,10 +15,33 @@
 
 ## 快速开始
 
-### 方式一：服务器初始化（🆕 推荐新服务器使用）
+### 方式一：零依赖安装（🚀 新服务器推荐）
+
+> 没有 git？没关系。一条命令搞定：
 
 ```bash
-# 一条命令克隆并运行
+# 安装到 /opt/linux-ops-kit（默认）
+curl -fsSL https://raw.githubusercontent.com/guanzhenxing/linux-ops-kit/main/bootstrap.sh | sudo bash
+
+# 安装后自动运行 init 交互式向导
+curl -fsSL https://raw.githubusercontent.com/guanzhenxing/linux-ops-kit/main/bootstrap.sh | sudo RUN_INIT=1 bash
+
+# 安装后自动运行 init 命令行模式（传入 init 参数）
+curl -fsSL https://raw.githubusercontent.com/guanzhenxing/linux-ops-kit/main/bootstrap.sh | \
+  sudo RUN_INIT=1 bash -s -- -u jesen -k github:jesen --docker
+
+# 自定义安装目录
+curl -fsSL https://raw.githubusercontent.com/guanzhenxing/linux-ops-kit/main/bootstrap.sh | \
+  sudo INSTALL_DIR=~/linux-ops-kit bash
+
+# 先看脚本再决定（安全习惯）
+curl -fsSL https://raw.githubusercontent.com/guanzhenxing/linux-ops-kit/main/bootstrap.sh | less
+```
+
+### 方式二：服务器初始化（已有 git 的服务器）
+
+```bash
+# 克隆仓库
 git clone git@github.com:guanzhenxing/linux-ops-kit.git && cd linux-ops-kit
 
 # 交互式向导（新手推荐）
@@ -33,17 +56,17 @@ sudo ./ops.sh init -u jesen -k github:jesen -s 2G --docker --harden-ssh --firewa
 
 init 会自动完成：系统更新 → 创建用户 → 导入 SSH Key → SSH 加固 → 防火墙 → fail2ban → Docker CE → 安全审计。
 
-### 方式二：日常运维（交互式菜单）
+### 方式三：日常运维（交互式菜单）
 
 ```bash
 cd linux-ops-kit
 ./ops.sh
 ```
 
-### 方式三：创建快捷命令（可选）
+### 方式四：创建快捷命令（可选）
 
 ```bash
-alias ops='cd ~/linux-ops-kit && ./ops.sh'
+echo "alias ops='/opt/linux-ops-kit/ops.sh'" >> ~/.bashrc && source ~/.bashrc
 ```
 
 ---
@@ -83,6 +106,7 @@ alias ops='cd ~/linux-ops-kit && ./ops.sh'
 
 ```
 linux-ops-kit/
+├── bootstrap.sh              # 🚀 远程引导安装（curl | bash 调用）
 ├── ops.sh                    # 主入口（交互菜单 + 子命令路由）
 ├── lib/
 │   ├── common.sh             # 核心函数库（输出/交互/系统检测）

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # 监控告警模块 - 实时面板/阈值告警/资源报告
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -146,7 +147,7 @@ check_thresholds() {
 
 EOF
 
-    read -p "请选择 [0-3]: " choice
+    read -r -p "请选择 [0-3]: " choice
 
     case $choice in
         1)
@@ -161,17 +162,17 @@ EOF
             ;;
         2)
             echo ""
-            read -p "CPU 警告阈值 (当前 $CPU_WARN%): " input
+            read -r -p "CPU 警告阈值 (当前 $CPU_WARN%): " input
             [ -n "$input" ] && CPU_WARN=$input
-            read -p "CPU 严重阈值 (当前 $CPU_CRIT%): " input
+            read -r -p "CPU 严重阈值 (当前 $CPU_CRIT%): " input
             [ -n "$input" ] && CPU_CRIT=$input
-            read -p "内存 警告阈值 (当前 $MEM_WARN%): " input
+            read -r -p "内存 警告阈值 (当前 $MEM_WARN%): " input
             [ -n "$input" ] && MEM_WARN=$input
-            read -p "内存 严重阈值 (当前 $MEM_CRIT%): " input
+            read -r -p "内存 严重阈值 (当前 $MEM_CRIT%): " input
             [ -n "$input" ] && MEM_CRIT=$input
-            read -p "磁盘 警告阈值 (当前 $DISK_WARN%): " input
+            read -r -p "磁盘 警告阈值 (当前 $DISK_WARN%): " input
             [ -n "$input" ] && DISK_WARN=$input
-            read -p "磁盘 严重阈值 (当前 $DISK_CRIT%): " input
+            read -r -p "磁盘 严重阈值 (当前 $DISK_CRIT%): " input
             [ -n "$input" ] && DISK_CRIT=$input
             print_success "阈值已更新"
             echo ""
@@ -337,7 +338,7 @@ generate_report() {
     print_success "报告已生成: $report_file"
 
     echo ""
-    read -p "查看报告? [y/N]: " view
+    read -r -p "查看报告? [y/N]: " view
     if [ "$view" = "y" ] || [ "$view" = "Y" ]; then
         less "$report_file"
     fi
@@ -363,7 +364,7 @@ EOF
 main() {
     while true; do
         show_menu
-        read -p "请选择 [1-3/b]: " choice
+        read -r -p "请选择 [1-3/b]: " choice
 
         case $choice in
             1) realtime_dashboard ;;

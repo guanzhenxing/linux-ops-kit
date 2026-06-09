@@ -100,7 +100,7 @@ SSHCONF
 
     # 验证 sshd 配置
     if sshd -t 2>/dev/null; then
-        systemctl restart sshd 2>/dev/null
+        run_cmd "重启 sshd（应用加固配置）" "systemctl restart sshd"
         print_result ok "SSH 加固" "/etc/ssh/sshd_config.d/99-hardening.conf"
         log_init_step "OK" "SSH 加固完成"
         write_init_state "ssh_harden" "ok"
@@ -131,12 +131,8 @@ do_firewall() {
                 pkg_install --skip-missing "ufw"
             fi
             if command_exists "ufw"; then
-                ufw --force disable 2>/dev/null || true
-                ufw default deny incoming 2>/dev/null
-                ufw default allow outgoing 2>/dev/null
-                ufw allow "$ssh_port/tcp" 2>/dev/null
-                ufw allow 80/tcp 2>/dev/null
-                ufw allow 443/tcp 2>/dev/null
+                run_cmd "配置 UFW 防火墙 (${ssh_port}/80/443)" \
+                    "ufw --force disable && ufw default deny incoming && ufw default allow outgoing && ufw allow '$ssh_port/tcp' && ufw allow 80/tcp && ufw allow 443/tcp"
 
                 # 自定义端口
                 if [ -n "$extra_ports" ]; then
@@ -147,19 +143,18 @@ do_firewall() {
 
                 # ufw enable 默认会弹交互确认："Command may disrupt existing ssh connections"
                 # 脚本环境必须用 --force 跳过交互。前提：SSH 端口已在上面 allow 过。
-                ufw --force enable 2>/dev/null
+                run_cmd "启用 UFW 防火墙" "ufw --force enable"
                 print_result ok "防火墙" "UFW 已启用 (${ssh_port}/80/443)"
             fi
             ;;
         rhel)
             # RHEL 系: firewalld
             if ! systemctl is-active firewalld &>/dev/null 2>&1; then
-                systemctl start firewalld 2>/dev/null
+                run_cmd "启动 firewalld" "systemctl start firewalld"
             fi
             if systemctl is-active firewalld &>/dev/null 2>&1; then
-                firewall-cmd --permanent --add-service=ssh 2>/dev/null
-                firewall-cmd --permanent --add-service=http 2>/dev/null
-                firewall-cmd --permanent --add-service=https 2>/dev/null
+                run_cmd "配置 firewalld 规则 (ssh/http/https)" \
+                    "firewall-cmd --permanent --add-service=ssh && firewall-cmd --permanent --add-service=http && firewall-cmd --permanent --add-service=https"
 
                 if [ "$ssh_port" != "22" ]; then
                     firewall-cmd --permanent --add-port="${ssh_port}/tcp" 2>/dev/null
@@ -170,7 +165,7 @@ do_firewall() {
                     done
                 fi
 
-                firewall-cmd --reload 2>/dev/null
+                run_cmd "重载 firewalld 规则" "firewall-cmd --reload"
                 print_result ok "防火墙" "firewalld 已启用 (${ssh_port}/80/443)"
             else
                 print_result fail "防火墙" "firewalld 不可用"
@@ -222,7 +217,7 @@ bantime = 1h
 FAIL2BAN
         fi
 
-        svc_manage "fail2ban" enable-now 2>/dev/null
+        run_cmd "启用 fail2ban 服务" "svc_manage fail2ban enable-now"
         print_result ok "fail2ban" "SSH: 3次/1小时, 通用: 5次/1小时"
         log_init_step "OK" "fail2ban 安装并配置完成"
         write_init_state "fail2ban" "ok"
@@ -309,7 +304,7 @@ do_security_audit() {
     echo -e "\n${BOLD}关键文件权限:${NC}"
     for file in /etc/shadow /etc/gshadow /etc/passwd; do
         if [ -f "$file" ]; then
-            local perms owner
+            local perms
             perms=$(stat -c "%a:%U:%G" "$file" 2>/dev/null)
             echo -e "  ${GREEN}✓${NC} $file ($perms)"
         fi

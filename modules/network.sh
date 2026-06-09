@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # 网络诊断模块 - 端口检查/接口信息/连通性测试/防火墙管理
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,7 +19,7 @@ check_ports() {
 
 EOF
 
-    read -p "请选择 [0-3]: " choice
+    read -r -p "请选择 [0-3]: " choice
 
     case $choice in
         1)
@@ -46,7 +47,7 @@ EOF
             pause
             ;;
         2)
-            read -p "请输入端口号: " port
+            read -r -p "请输入端口号: " port
             if [ -z "$port" ] || ! [[ "$port" =~ ^[0-9]+$ ]]; then
                 print_error "无效端口号"
                 sleep 1
@@ -104,7 +105,7 @@ show_interface() {
 
 EOF
 
-    read -p "请选择 [0-4]: " choice
+    read -r -p "请选择 [0-4]: " choice
 
     case $choice in
         1)
@@ -136,7 +137,7 @@ EOF
             pause
             ;;
         3)
-            read -p "输入要查询的域名: " domain
+            read -r -p "输入要查询的域名: " domain
             if [ -z "$domain" ]; then
                 return
             fi
@@ -193,11 +194,11 @@ test_connectivity() {
 
 EOF
 
-    read -p "请选择 [0-3]: " choice
+    read -r -p "请选择 [0-3]: " choice
 
     case $choice in
         1)
-            read -p "输入目标地址: " target
+            read -r -p "输入目标地址: " target
             if [ -z "$target" ]; then
                 return
             fi
@@ -213,7 +214,7 @@ EOF
             pause
             ;;
         2)
-            read -p "输入目标地址: " target
+            read -r -p "输入目标地址: " target
             if [ -z "$target" ]; then
                 return
             fi
@@ -236,7 +237,7 @@ EOF
             pause
             ;;
         3)
-            read -p "输入目标地址 (host:port 或 host port): " input
+            read -r -p "输入目标地址 (host:port 或 host port): " input
             if [ -z "$input" ]; then
                 return
             fi
@@ -249,7 +250,7 @@ EOF
                 port="${input##*:}"
             else
                 host="$input"
-                read -p "输入端口号: " port
+                read -r -p "输入端口号: " port
             fi
 
             if [ -z "$host" ] || [ -z "$port" ]; then
@@ -328,7 +329,7 @@ manage_firewall() {
 
 EOF
 
-    read -p "请选择 [0-3]: " choice
+    read -r -p "请选择 [0-3]: " choice
 
     case $choice in
         1) show_firewall_rules "$fw_type" ;;
@@ -396,14 +397,14 @@ firewall_open_port() {
         return
     fi
 
-    read -p "输入要开放的端口号: " port
+    read -r -p "输入要开放的端口号: " port
     if [ -z "$port" ] || ! [[ "$port" =~ ^[0-9]+$ ]]; then
         print_error "无效端口号"
         sleep 1
         return
     fi
 
-    read -p "协议类型 (tcp/udp，默认 tcp): " proto
+    read -r -p "协议类型 (tcp/udp，默认 tcp): " proto
     proto=${proto:-tcp}
 
     if ! confirm "确定开放端口 $port/$proto ?"; then
@@ -440,14 +441,14 @@ firewall_close_port() {
         return
     fi
 
-    read -p "输入要关闭的端口号: " port
+    read -r -p "输入要关闭的端口号: " port
     if [ -z "$port" ] || ! [[ "$port" =~ ^[0-9]+$ ]]; then
         print_error "无效端口号"
         sleep 1
         return
     fi
 
-    read -p "协议类型 (tcp/udp，默认 tcp): " proto
+    read -r -p "协议类型 (tcp/udp，默认 tcp): " proto
     proto=${proto:-tcp}
 
     if ! confirm "确定关闭端口 $port/$proto ?"; then
@@ -495,7 +496,7 @@ EOF
 main() {
     while true; do
         show_menu
-        read -p "请选择 [1-4/b]: " choice
+        read -r -p "请选择 [1-4/b]: " choice
 
         case $choice in
             1) check_ports ;;

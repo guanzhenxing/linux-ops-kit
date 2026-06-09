@@ -12,6 +12,9 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
+# 全局自动确认标志（init 向导已确认整体计划时设为 1）
+OPS_AUTO_CONFIRM="${OPS_AUTO_CONFIRM:-0}"
+
 # ==================== 输出函数 ====================
 
 # 信息输出（绿色）
@@ -47,14 +50,43 @@ print_title() {
 confirm() {
     local prompt="$1 [y/N]: "
     local answer
-    read -p "$prompt" answer
+    read -r -p "$prompt" answer
     [ "$answer" = "y" ] || [ "$answer" = "Y" ]
 }
 
 # 任意键继续
 pause() {
     echo -e "\n${CYAN}按任意键继续...${NC}"
-    read -n 1 -s
+    read -r -n 1 -s
+}
+
+# 显示并执行命令（只读操作，无需确认）
+# 用法: show_cmd "描述" "命令字符串"
+show_cmd() {
+    local desc="$1"
+    local cmd="$2"
+    echo -e "  ${CYAN}→${NC} ${desc}"
+    echo -e "    ${BOLD}\$${NC} ${cmd}"
+    eval "$cmd"
+}
+
+# 显示命令并要求确认后执行（变更操作）
+# 用法: run_cmd "描述" "命令字符串"
+# 返回: 0=已执行, 1=用户跳过
+run_cmd() {
+    local desc="$1"
+    local cmd="$2"
+    echo -e "  ${YELLOW}⚡${NC} ${desc}"
+    echo -e "    ${BOLD}\$${NC} ${cmd}"
+    if [ "${OPS_AUTO_CONFIRM}" = "1" ]; then
+        echo -e "    ${GREEN}[自动确认]${NC}"
+    else
+        if ! confirm_yes "执行此操作？"; then
+            echo -e "    ${YELLOW}⏭ 已跳过${NC}"
+            return 1
+        fi
+    fi
+    eval "$cmd"
 }
 
 # 菜单选择（范围限制）
@@ -66,7 +98,7 @@ menu_choice() {
     local choice
 
     while true; do
-        read -p "$prompt [$min-$max]: " choice
+        read -r -p "$prompt [$min-$max]: " choice
         if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge "$min" ] && [ "$choice" -le "$max" ]; then
             echo "$choice"
             return
@@ -118,7 +150,12 @@ command_exists() {
 
 # 获取 CPU 使用率
 get_cpu_usage() {
-    top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1
+    local cpu_line
+    cpu_line=$(grep '^cpu ' /proc/stat 2>/dev/null) || { echo "0"; return 1; }
+    local total=$(echo "$cpu_line" | awk '{for(i=2;i<=NF;i++) sum+=$i; print sum}')
+    local idle=$(echo "$cpu_line" | awk '{print $5}')
+    if [ "$total" -eq 0 ]; then echo "0"; return 1; fi
+    echo "scale=1; ($total - $idle) * 100 / $total" | bc 2>/dev/null || echo "0"
 }
 
 # 获取内存使用情况
@@ -185,7 +222,7 @@ is_root() {
 require_root() {
     if ! is_root; then
         print_error "此操作需要 root 权限"
-        print_info "请使用: sudo $0 $@"
+        print_info "请使用: sudo $0 $*"
         exit 1
     fi
 }
@@ -197,8 +234,8 @@ human_readable() {
     local units=("B" "KB" "MB" "GB" "TB")
     local unit=0
 
-    while [ $bytes -gt 1024 ] && [ $unit -lt 4 ]; do
-        bytes=$((bytes / 1024))
+    while [ "$bytes" -ge 1024 ] && [ $unit -lt 4 ]; do
+        bytes=$(echo "scale=2; $bytes / 1024" | bc 2>/dev/null || echo $((bytes / 1024)))
         unit=$((unit + 1))
     done
 
@@ -264,16 +301,16 @@ print_separator() {
 confirm_yes() {
     local prompt="$1 [y/N]: "
     local answer
-    read -p "$prompt" answer
+    read -r -p "$prompt" answer
     [ "$answer" = "y" ] || [ "$answer" = "Y" ]
 }
 
 # 默认 Yes 的确认
-# 用法: if confirm_no "安装 Docker?"; then ... fi
-confirm_no() {
+# 用法: if confirm_default_yes "安装 Docker?"; then ... fi
+confirm_default_yes() {
     local prompt="$1 [Y/n]: "
     local answer
-    read -p "$prompt" answer
+    read -r -p "$prompt" answer
     [ -z "$answer" ] || [ "$answer" = "y" ] || [ "$answer" = "Y" ]
 }
 
@@ -283,7 +320,7 @@ input_with_default() {
     local prompt="$1"
     local default="$2"
     local answer
-    read -p "${prompt} [默认: ${default}]: " answer
+    read -r -p "${prompt} [默认: ${default}]: " answer
     echo "${answer:-$default}"
 }
 
@@ -301,7 +338,7 @@ select_option() {
     done
 
     while true; do
-        read -p "请选择 [1-${count}]: " choice
+        read -r -p "请选择 [1-${count}]: " choice
         if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "$count" ]; then
             echo "$choice"
             return

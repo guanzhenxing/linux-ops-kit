@@ -33,7 +33,7 @@ do_timezone() {
     print_step "$step_num" "$total" "时区设置"
 
     if command_exists "timedatectl"; then
-        if timedatectl set-timezone "$tz" 2>/dev/null; then
+        if run_cmd "设置时区: $tz" "timedatectl set-timezone '$tz'"; then
             print_result ok "时区设置" "→ $tz"
             log_init_step "OK" "时区设置为 $tz"
             write_init_state "timezone" "ok"
@@ -43,7 +43,7 @@ do_timezone() {
 
     # fallback: 手动链接
     if [ -f "/usr/share/zoneinfo/$tz" ]; then
-        ln -sf "/usr/share/zoneinfo/$tz" /etc/localtime
+        run_cmd "设置时区 (fallback): $tz" "ln -sf '/usr/share/zoneinfo/$tz' /etc/localtime"
         print_result ok "时区设置" "→ $tz"
         log_init_step "OK" "时区设置为 $tz (手动)"
         write_init_state "timezone" "ok"
@@ -79,10 +79,9 @@ do_hostname() {
     fi
 
     if command_exists "hostnamectl"; then
-        hostnamectl set-hostname "$hostname"
+        run_cmd "设置 hostname: $hostname" "hostnamectl set-hostname '$hostname'"
     else
-        echo "$hostname" > /etc/hostname
-        hostname "$hostname"
+        run_cmd "设置 hostname (fallback): $hostname" "echo '$hostname' > /etc/hostname && hostname '$hostname'"
     fi
 
     print_result ok "Hostname" "→ $hostname"
@@ -143,10 +142,7 @@ do_swap() {
 
     # 创建 swapfile
     local count=$((size_bytes / 1024))
-    if dd if=/dev/zero of="$swapfile" bs=1024 count="$count" 2>/dev/null; then
-        chmod 600 "$swapfile"
-        mkswap "$swapfile" 2>/dev/null
-        swapon "$swapfile"
+    if run_cmd "创建 ${size} swapfile: $swapfile" "dd if=/dev/zero of='$swapfile' bs=1024 count=$count && chmod 600 '$swapfile' && mkswap '$swapfile' && swapon '$swapfile'"; then
 
         # 写入 fstab
         if ! grep -q "$swapfile" /etc/fstab; then
@@ -191,7 +187,7 @@ net.core.somaxconn = 1024
 net.ipv4.tcp_fastopen = 3
 fs.inotify.max_user_watches = 524288
 SYSCTL
-    sysctl -p "$sysctl_file" 2>/dev/null
+    run_cmd "应用 sysctl 调优" "sysctl -p '$sysctl_file'"
 
     print_result ok "系统参数调优" "$sysctl_file"
     log_init_step "OK" "sysctl + ulimit 调优"

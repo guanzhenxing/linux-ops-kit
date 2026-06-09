@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # 服务管理模块 - 服务状态概览/启停/自启管理
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -91,7 +92,7 @@ manage_single_service() {
     clear
     print_title "=== 管理单个服务 ==="
 
-    read -p "请输入服务名: " service_name
+    read -r -p "请输入服务名: " service_name
 
     if [ -z "$service_name" ]; then
         print_error "服务名不能为空"
@@ -147,7 +148,7 @@ manage_single_service() {
 
 EOF
 
-    read -p "请选择 [0-6]: " action
+    read -r -p "请选择 [0-6]: " action
 
     case $action in
         1) do_service_action "$service_name" "start" ;;
@@ -195,25 +196,25 @@ do_service_action() {
     if has_systemd; then
         case "$action" in
             start|stop|restart)
-                systemctl "$action" "$service"
+                show_cmd "${action_cn}服务: $service" "systemctl $action '$service'"
                 ;;
             enable)
-                systemctl enable "$service"
+                show_cmd "设置开机自启: $service" "systemctl enable '$service'"
                 ;;
             disable)
-                systemctl disable "$service"
+                show_cmd "禁止开机自启: $service" "systemctl disable '$service'"
                 ;;
         esac
     else
         case "$action" in
             start|stop|restart)
-                service "$service" "$action"
+                show_cmd "${action_cn}服务: $service" "service '$service' $action"
                 ;;
             enable)
-                chkconfig "$service" on 2>/dev/null || update-rc.d "$service" enable 2>/dev/null
+                show_cmd "设置开机自启: $service" "chkconfig '$service' on || update-rc.d '$service' enable"
                 ;;
             disable)
-                chkconfig "$service" off 2>/dev/null || update-rc.d "$service" disable 2>/dev/null
+                show_cmd "禁止开机自启: $service" "chkconfig '$service' off || update-rc.d '$service' disable"
                 ;;
         esac
     fi
@@ -267,7 +268,7 @@ EOF
 main() {
     while true; do
         show_menu
-        read -p "请选择 [1-2/b]: " choice
+        read -r -p "请选择 [1-2/b]: " choice
 
         case $choice in
             1) show_service_overview ;;

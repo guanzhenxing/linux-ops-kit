@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # 系统检查模块 - CPU/内存/磁盘/服务健康检查
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -103,7 +104,6 @@ show_memory_check() {
     local mem_info=$(free -h | grep Mem)
     local mem_total=$(echo $mem_info | awk '{print $2}')
     local mem_used=$(echo $mem_info | awk '{print $3}')
-    local mem_free=$(echo $mem_info | awk '{print $4}')
     local mem_avail=$(echo $mem_info | awk '{print $7}')
 
     # 计算使用率
@@ -209,7 +209,7 @@ show_service_check() {
 
     echo ""
     echo -e "${BOLD}检查特定服务:${NC}"
-    read -p "请输入服务名 (留空跳过): " specific_service
+    read -r -p "请输入服务名 (留空跳过): " specific_service
 
     if [ -n "$specific_service" ]; then
         echo ""
@@ -314,7 +314,7 @@ show_all_check() {
 main() {
     while true; do
         show_menu
-        read -p "请选择 [1-6/b]: " choice
+        read -r -p "请选择 [1-6/b]: " choice
 
         case $choice in
             1) show_all_check ;;

@@ -49,19 +49,17 @@ do_docker() {
     # 清理旧版本
     case "$OS_FAMILY" in
         debian)
-            apt-get remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
+            run_cmd "清理旧版本 Docker" "apt-get remove -y docker docker-engine docker.io containerd runc" || true
             ;;
         rhel)
-            yum remove -y docker docker-client docker-common docker-latest 2>/dev/null || true
-            dnf remove -y docker docker-client docker-common 2>/dev/null || true
+            run_cmd "清理旧版本 Docker" "yum remove -y docker docker-client docker-common docker-latest || dnf remove -y docker docker-client docker-common" || true
             ;;
     esac
 
     # 安装依赖
     case "$OS_FAMILY" in
         debian)
-            apt-get update -qq
-            apt-get install -y ca-certificates curl gnupg 2>/dev/null
+            run_cmd "安装 Docker 依赖" "apt-get update -qq && apt-get install -y ca-certificates curl gnupg"
             ;;
         rhel)
             pkg_install --skip-missing "yum-utils device-mapper-persistent-data lvm2"
@@ -90,8 +88,7 @@ do_docker() {
 
             echo "deb [arch=$arch signed-by=/etc/apt/keyrings/docker.gpg] ${docker_repo_base}/linux/${OS_ID} ${codename} stable" \
                 > /etc/apt/sources.list.d/docker.list
-            apt-get update -qq
-            apt-get install -y docker-ce docker-ce-cli containerd.io 2>/dev/null
+            run_cmd "安装 Docker CE" "apt-get update -qq && apt-get install -y docker-ce docker-ce-cli containerd.io"
             ;;
         rhel)
             local repo_url="${docker_repo_base}/linux/centos/docker-ce.repo"
@@ -131,8 +128,7 @@ do_docker() {
                 # 使用国内镜像加速
                 compose_url="https://ghproxy.com/${compose_url}"
             fi
-            curl -SL "$compose_url" -o /usr/local/bin/docker-compose 2>/dev/null && \
-                chmod +x /usr/local/bin/docker-compose
+            run_cmd "安装 docker-compose standalone" "curl -SL '$compose_url' -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose"
         fi
     fi
 

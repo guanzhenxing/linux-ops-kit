@@ -23,7 +23,7 @@
 #   - 任何步骤失败 → 不阻塞其余步骤（已成功的保留）
 # ============================================================
 
-set -o pipefail
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${SCRIPT_DIR}/lib/common.sh"
@@ -84,16 +84,12 @@ parse_args() {
                 OPTS_SSH_KEY="$2"; shift 2 ;;
             -d|--docker)
                 OPTS_DOCKER="yes"; shift ;;
-            --nginx)
-                OPTS_NGINX="yes"; shift ;;
             --harden-ssh)
                 OPTS_HARDEN_SSH="yes"; shift ;;
             --fail2ban)
                 OPTS_FAIL2BAN="yes"; shift ;;
             --firewall)
                 OPTS_FIREWALL="yes"; shift ;;
-            --lock-root)
-                OPTS_LOCK_ROOT="yes"; shift ;;
             --skip-upgrade)
                 OPTS_SKIP_UPGRADE="yes"; shift ;;
             --dry-run)
@@ -311,11 +307,11 @@ INTRO
 
     case "$key_choice" in
         1)
-            read -p "请输入 GitHub 用户名: " gh_user
+            read -r -p "请输入 GitHub 用户名: " gh_user
             OPTS_SSH_KEY="github:${gh_user}"
             ;;
         2)
-            read -p "请输入 GitLab 用户名: " gl_user
+            read -r -p "请输入 GitLab 用户名: " gl_user
             OPTS_SSH_KEY="gitlab:${gl_user}"
             ;;
         3)
@@ -330,15 +326,15 @@ INTRO
     print_separator
     echo -e "${BOLD}第二步 / 共五步: 安全加固${NC}\n"
 
-    if confirm_no "启用 SSH 安全加固？"; then
+    if confirm_default_yes "启用 SSH 安全加固？"; then
         OPTS_HARDEN_SSH="yes"
         echo "  (将禁用 root SSH 登录和密码认证)"
     fi
-    if confirm_no "启用防火墙？"; then
+    if confirm_default_yes "启用防火墙？"; then
         OPTS_FIREWALL="yes"
         echo "  (UFW/firewalld, 默认允许 SSH/HTTP/HTTPS)"
     fi
-    if confirm_no "启用 fail2ban 入侵防护？"; then
+    if confirm_default_yes "启用 fail2ban 入侵防护？"; then
         OPTS_FAIL2BAN="yes"
         echo "  (SSH 密码错误 3 次将自动封禁 1 小时)"
     fi
@@ -346,7 +342,7 @@ INTRO
     print_separator
     echo -e "${BOLD}第三步 / 共五步: 软件安装${NC}\n"
 
-    if confirm_no "安装 Docker CE + Docker Compose？"; then
+    if confirm_default_yes "安装 Docker CE + Docker Compose？"; then
         OPTS_DOCKER="yes"
     fi
 
@@ -385,8 +381,11 @@ execute_init() {
     local start_time
     start_time=$(date +%s)
 
+    # init 已在计划阶段获得用户确认，子命令自动确认
+    OPS_AUTO_CONFIRM=1
+
     # 写入初始状态
-    INIT_PARAMS="[$(echo "\"$@\"" | sed 's/ /", "/g')]"
+    INIT_PARAMS="[$(echo "\"$*\"" | sed 's/ /", "/g')]"
     write_init_state "__init__" ""
 
     detect_os_full

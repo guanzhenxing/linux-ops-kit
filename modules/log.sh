@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # 日志管理模块 - 系统日志/服务日志/实时跟踪/日志搜索
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -42,7 +43,7 @@ show_system_log() {
 
 EOF
 
-    read -p "请选择 [0-5]: " choice
+    read -r -p "请选择 [0-5]: " choice
 
     case $choice in
         1)
@@ -105,7 +106,7 @@ show_journal_by_time() {
 5. 自定义
 EOF
 
-    read -p "请选择 [1-5]: " time_choice
+    read -r -p "请选择 [1-5]: " time_choice
     local since=""
 
     case $time_choice in
@@ -114,7 +115,7 @@ EOF
         3) since="24 hours ago" ;;
         4) since="7 days ago" ;;
         5)
-            read -p "输入时间 (如 '2024-01-01' 或 '2 hours ago'): " since
+            read -r -p "输入时间 (如 '2024-01-01' 或 '2 hours ago'): " since
             [ -z "$since" ] && return
             ;;
         *) return ;;
@@ -174,7 +175,7 @@ show_service_log() {
     fi
 
     echo ""
-    read -p "选择服务编号 (0 返回): " num
+    read -r -p "选择服务编号 (0 返回): " num
 
     [ "$num" = "0" ] && return
 
@@ -211,7 +212,7 @@ show_service_log() {
         fi
 
         echo ""
-        read -p "选择文件编号: " fnum
+        read -r -p "选择文件编号: " fnum
         if [[ "$fnum" =~ ^[0-9]+$ ]] && [ "$fnum" -ge 1 ] && [ "$fnum" -le "${#files[@]}" ]; then
             tail -100 "${files[$((fnum - 1))]}" | less -R
         fi
@@ -233,7 +234,7 @@ show_service_log() {
         done
 
         echo ""
-        read -p "选择编号: " fnum
+        read -r -p "选择编号: " fnum
         if [[ "$fnum" =~ ^[0-9]+$ ]] && [ "$fnum" -ge 1 ] && [ "$fnum" -le "${#files[@]}" ]; then
             tail -100 "${files[$((fnum - 1))]}" | less -R
         fi
@@ -255,7 +256,7 @@ follow_log() {
     echo "0. 返回"
     echo ""
 
-    read -p "请选择 [0-2]: " choice
+    read -r -p "请选择 [0-2]: " choice
 
     case $choice in
         0) return ;;
@@ -287,13 +288,13 @@ follow_log() {
             done
 
             echo ""
-            read -p "选择编号: " fnum
+            read -r -p "选择编号: " fnum
             if [[ "$fnum" =~ ^[0-9]+$ ]] && [ "$fnum" -ge 1 ] && [ "$fnum" -le "${#log_files[@]}" ]; then
                 start_follow "${log_files[$((fnum - 1))]}"
             fi
             ;;
         2)
-            read -p "输入日志文件路径: " log_path
+            read -r -p "输入日志文件路径: " log_path
             if [ -z "$log_path" ]; then
                 return
             fi
@@ -327,7 +328,7 @@ search_log() {
     clear
     print_title "=== 日志搜索 ==="
 
-    read -p "输入搜索关键词: " keyword
+    read -r -p "输入搜索关键词: " keyword
     [ -z "$keyword" ] && return
 
     echo ""
@@ -340,7 +341,7 @@ search_log() {
 
 EOF
 
-    read -p "请选择 [0-3]: " choice
+    read -r -p "请选择 [0-3]: " choice
 
     case $choice in
         1)
@@ -363,7 +364,7 @@ EOF
             fi
             ;;
         2)
-            read -p "输入日志文件路径: " file_path
+            read -r -p "输入日志文件路径: " file_path
             if [ -z "$file_path" ] || [ ! -f "$file_path" ]; then
                 print_error "文件不存在"
                 sleep 1
@@ -398,7 +399,7 @@ select_time_range() {
 5. 不限时间
 EOF
 
-    read -p "请选择 [1-5] (默认5): " time_choice
+    read -r -p "请选择 [1-5] (默认5): " time_choice
 
     case $time_choice in
         1) echo "1 hour ago" ;;
@@ -431,7 +432,7 @@ EOF
 main() {
     while true; do
         show_menu
-        read -p "请选择 [1-4/b]: " choice
+        read -r -p "请选择 [1-4/b]: " choice
 
         case $choice in
             1) show_system_log ;;

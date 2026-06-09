@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # 磁盘管理模块 - 使用分析/清理/挂载/LVM管理
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -19,7 +20,7 @@ analyze_disk() {
 
 EOF
 
-    read -p "请选择 [0-4]: " choice
+    read -r -p "请选择 [0-4]: " choice
 
     case $choice in
         1)
@@ -42,10 +43,10 @@ EOF
             pause
             ;;
         2)
-            read -p "搜索目录 (默认 /): " search_dir
+            read -r -p "搜索目录 (默认 /): " search_dir
             search_dir=${search_dir:-/}
 
-            read -p "最小文件大小 (如 100M, 1G, 默认 100M): " min_size
+            read -r -p "最小文件大小 (如 100M, 1G, 默认 100M): " min_size
             min_size=${min_size:-100M}
 
             echo ""
@@ -62,10 +63,10 @@ EOF
             pause
             ;;
         3)
-            read -p "分析目录 (默认 /): " target_dir
+            read -r -p "分析目录 (默认 /): " target_dir
             target_dir=${target_dir:-/}
 
-            read -p "显示前 N 个 (默认 10): " top_n
+            read -r -p "显示前 N 个 (默认 10): " top_n
             top_n=${top_n:-10}
 
             echo ""
@@ -131,7 +132,7 @@ clean_disk() {
 
 EOF
 
-    read -p "请选择 [0-6]: " choice
+    read -r -p "请选择 [0-6]: " choice
 
     case $choice in
         1) clean_pkg_cache ;;
@@ -170,12 +171,11 @@ clean_pkg_cache() {
 
     if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
         local before=$(du -sh /var/cache/apt/archives/ 2>/dev/null | awk '{print $1}')
-        apt-get clean -y 2>/dev/null
-        apt-get autoremove -y 2>/dev/null
+        run_cmd "清理 APT 缓存" "apt-get clean -y && apt-get autoremove -y"
         local after=$(du -sh /var/cache/apt/archives/ 2>/dev/null | awk '{print $1}')
         print_success "APT 缓存已清理: $before → $after"
     elif [ "$os_type" = "centos" ] || [ "$os_type" = "rhel" ]; then
-        yum clean all -y 2>/dev/null || dnf clean all -y 2>/dev/null
+        run_cmd "清理 YUM/DNF 缓存" "yum clean all -y || dnf clean all -y"
         print_success "YUM/DNF 缓存已清理"
     else
         print_warn "不支持的发行版，跳过包缓存清理"
@@ -188,14 +188,12 @@ clean_system_logs() {
 
     if command_exists journalctl; then
         local before=$(journalctl --disk-usage 2>/dev/null | awk '{print $7,$8}')
-        journalctl --vacuum-size=100M --vacuum-time=7d 2>/dev/null
+        run_cmd "清理系统日志（保留7天）" "journalctl --vacuum-size=100M --vacuum-time=7d"
         local after=$(journalctl --disk-usage 2>/dev/null | awk '{print $7,$8}')
         print_success "Journal 日志已清理: $before → $after"
     else
         # 清理传统日志
-        find /var/log -name "*.gz" -mtime +7 -delete 2>/dev/null
-        find /var/log -name "*.old" -mtime +7 -delete 2>/dev/null
-        find /var/log -name "*.1" -mtime +7 -delete 2>/dev/null
+        run_cmd "清理旧日志文件 (>7天)" "find /var/log -name '*.gz' -mtime +7 -delete && find /var/log -name '*.old' -mtime +7 -delete && find /var/log -name '*.1' -mtime +7 -delete"
         print_success "旧日志文件已清理"
     fi
     echo ""
@@ -214,8 +212,7 @@ clean_temp_files() {
     if [ "$total" -eq 0 ]; then
         print_info "无需要清理的临时文件"
     else
-        find /tmp -type f -mtime +7 ! -name ".X*-lock" -delete 2>/dev/null
-        find /var/tmp -type f -mtime +7 -delete 2>/dev/null
+        run_cmd "清理 $total 个临时文件 (>7天)" "find /tmp -type f -mtime +7 ! -name '.X*-lock' -delete && find /var/tmp -type f -mtime +7 -delete"
         print_success "已清理 $total 个临时文件 (>7天)"
     fi
     echo ""
@@ -235,7 +232,7 @@ clean_docker() {
     fi
 
     local before=$(docker system df 2>/dev/null | head -2 | tail -1 | awk '{print $3}')
-    docker system prune -f 2>/dev/null
+    run_cmd "清理 Docker 资源" "docker system prune -f"
     local after=$(docker system df 2>/dev/null | head -2 | tail -1 | awk '{print $3}')
     print_success "Docker 资源已清理: $before → $after"
     echo ""
@@ -246,11 +243,11 @@ clean_old_kernels() {
     local os_type=$(detect_os)
 
     if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-        apt-get autoremove -y --purge 2>/dev/null
+        run_cmd "清理旧内核包" "apt-get autoremove -y --purge"
         print_success "旧内核包已清理"
     elif [ "$os_type" = "centos" ] || [ "$os_type" = "rhel" ]; then
         if command_exists package-cleanup; then
-            package-cleanup --oldkernels --count=2 -y 2>/dev/null
+            run_cmd "清理旧内核 (保留最近2个)" "package-cleanup --oldkernels --count=2 -y"
             print_success "旧内核已清理 (保留最近2个)"
         else
             print_info "安装 package-cleanup: yum install yum-utils"
@@ -277,7 +274,7 @@ manage_mount() {
 
 EOF
 
-    read -p "请选择 [0-5]: " choice
+    read -r -p "请选择 [0-5]: " choice
 
     case $choice in
         1)
@@ -310,8 +307,8 @@ EOF
                 return
             fi
 
-            read -p "输入设备路径 (如 /dev/sdb1): " device
-            read -p "输入挂载点 (如 /mnt/data): " mount_point
+            read -r -p "输入设备路径 (如 /dev/sdb1): " device
+            read -r -p "输入挂载点 (如 /mnt/data): " mount_point
 
             if [ -z "$device" ] || [ -z "$mount_point" ]; then
                 print_error "设备路径和挂载点不能为空"
@@ -327,14 +324,11 @@ EOF
 
             mkdir -p "$mount_point"
 
-            if confirm "挂载 $device 到 $mount_point ?"; then
-                mount "$device" "$mount_point"
-                if [ $? -eq 0 ]; then
-                    print_success "挂载成功"
-                    log_action "挂载了 $device 到 $mount_point"
-                else
-                    print_error "挂载失败"
-                fi
+            if run_cmd "挂载 $device → $mount_point" "mount '$device' '$mount_point'"; then
+                print_success "挂载成功"
+                log_action "挂载了 $device 到 $mount_point"
+            else
+                print_error "挂载失败"
             fi
             echo ""
             pause
@@ -352,21 +346,18 @@ EOF
             mount | grep -vE 'proc|sys|dev|tmpfs|cgroup|overlay' | awk '{print $1, "on", $3}'
             echo ""
 
-            read -p "输入要卸载的挂载点或设备: " target
+            read -r -p "输入要卸载的挂载点或设备: " target
 
             if [ -z "$target" ]; then
                 return
             fi
 
-            if confirm "确定卸载 $target ?"; then
-                umount "$target"
-                if [ $? -eq 0 ]; then
-                    print_success "卸载成功"
-                    log_action "卸载了 $target"
-                else
-                    print_error "卸载失败（可能正在使用中）"
-                    print_info "使用 'lsof +D $target' 查看占用进程"
-                fi
+            if run_cmd "卸载 $target" "umount '$target'"; then
+                print_success "卸载成功"
+                log_action "卸载了 $target"
+            else
+                print_error "卸载失败（可能正在使用中）"
+                print_info "使用 'lsof +D $target' 查看占用进程"
             fi
             echo ""
             pause
@@ -410,7 +401,7 @@ manage_lvm() {
 
 EOF
 
-    read -p "请选择 [0-4]: " choice
+    read -r -p "请选择 [0-4]: " choice
 
     case $choice in
         1)
@@ -450,31 +441,28 @@ EOF
             lvs 2>/dev/null
             echo ""
 
-            read -p "输入逻辑卷路径 (如 /dev/vg0/lv0): " lv_path
+            read -r -p "输入逻辑卷路径 (如 /dev/vg0/lv0): " lv_path
             if [ -z "$lv_path" ]; then
                 return
             fi
 
-            read -p "输入新大小 (如 +10G 或 20G): " new_size
+            read -r -p "输入新大小 (如 +10G 或 20G): " new_size
             if [ -z "$new_size" ]; then
                 return
             fi
 
-            if confirm "扩展逻辑卷 $lv_path 到 $new_size ?"; then
-                lvextend -L "$new_size" "$lv_path" 2>/dev/null
-                if [ $? -eq 0 ]; then
-                    # 扩展文件系统
-                    local fs_type=$(lsblk -n -o FSTYPE "$lv_path" 2>/dev/null)
-                    if [ "$fs_type" = "ext4" ]; then
-                        resize2fs "$lv_path"
-                    elif [ "$fs_type" = "xfs" ]; then
-                        xfs_growfs "$lv_path"
-                    fi
-                    print_success "逻辑卷已扩展"
-                    log_action "扩展了逻辑卷 $lv_path 到 $new_size"
-                else
-                    print_error "扩展失败，请检查卷组是否有足够空间"
+            if run_cmd "扩展逻辑卷 $lv_path → $new_size" "lvextend -L '$new_size' '$lv_path'"; then
+                # 扩展文件系统
+                local fs_type=$(lsblk -n -o FSTYPE "$lv_path" 2>/dev/null)
+                if [ "$fs_type" = "ext4" ]; then
+                    run_cmd "扩展 ext4 文件系统" "resize2fs '$lv_path'"
+                elif [ "$fs_type" = "xfs" ]; then
+                    run_cmd "扩展 xfs 文件系统" "xfs_growfs '$lv_path'"
                 fi
+                print_success "逻辑卷已扩展"
+                log_action "扩展了逻辑卷 $lv_path 到 $new_size"
+            else
+                print_error "扩展失败，请检查卷组是否有足够空间"
             fi
             echo ""
             pause
@@ -508,7 +496,7 @@ EOF
 main() {
     while true; do
         show_menu
-        read -p "请选择 [1-4/b]: " choice
+        read -r -p "请选择 [1-4/b]: " choice
 
         case $choice in
             1) analyze_disk ;;

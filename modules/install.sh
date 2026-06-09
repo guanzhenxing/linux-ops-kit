@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # 快捷安装模块 - 常用软件安装/SSL证书/配置模板/环境套件
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -50,7 +51,7 @@ install_software() {
     done
 
     echo ""
-    read -p "选择要安装的软件编号 (0 返回): " num
+    read -r -p "选择要安装的软件编号 (0 返回): " num
 
     [ "$num" = "0" ] && return
 
@@ -82,95 +83,77 @@ install_single() {
     case "$sw" in
         nginx)
             if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-                apt-get update -qq
-                apt-get install -y nginx
+                run_cmd "安装 Nginx" "apt-get update -qq && apt-get install -y nginx"
             else
-                yum install -y nginx || dnf install -y nginx
+                run_cmd "安装 Nginx" "yum install -y nginx || dnf install -y nginx"
             fi
             ;;
         docker)
-            if confirm "是否使用官方脚本安装 Docker?"; then
-                curl -fsSL https://get.docker.com | sh
-                systemctl enable docker
-                systemctl start docker
+            if confirm_yes "是否使用官方脚本安装 Docker?"; then
+                run_cmd "使用官方脚本安装 Docker" "curl -fsSL https://get.docker.com | sh" && \
+                systemctl enable docker && systemctl start docker
                 print_info "将当前用户加入 docker 组: usermod -aG docker $USER"
             else
                 if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-                    apt-get update -qq
-                    apt-get install -y docker.io docker-compose
-                    systemctl enable docker
-                    systemctl start docker
+                    run_cmd "安装 Docker (系统包)" "apt-get update -qq && apt-get install -y docker.io docker-compose" && \
+                    systemctl enable docker && systemctl start docker
                 else
-                    yum install -y docker docker-compose || dnf install -y docker docker-compose
-                    systemctl enable docker
-                    systemctl start docker
+                    run_cmd "安装 Docker (系统包)" "yum install -y docker docker-compose || dnf install -y docker docker-compose" && \
+                    systemctl enable docker && systemctl start docker
                 fi
             fi
             ;;
         nodejs)
-            read -p "输入 Node.js 版本 (如 18, 20, 22，默认 20): " node_ver
+            read -r -p "输入 Node.js 版本 (如 18, 20, 22，默认 20): " node_ver
             node_ver=${node_ver:-20}
             if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-                curl -fsSL https://deb.nodesource.com/setup_${node_ver}.x | bash -
-                apt-get install -y nodejs
+                run_cmd "安装 Node.js $node_ver" "curl -fsSL https://deb.nodesource.com/setup_${node_ver}.x | bash - && apt-get install -y nodejs"
             else
-                curl -fsSL https://rpm.nodesource.com/setup_${node_ver}.x | bash -
-                yum install -y nodejs || dnf install -y nodejs
+                run_cmd "安装 Node.js $node_ver" "curl -fsSL https://rpm.nodesource.com/setup_${node_ver}.x | bash - && yum install -y nodejs || dnf install -y nodejs"
             fi
             ;;
         git)
             if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-                apt-get update -qq
-                apt-get install -y git
+                run_cmd "安装 Git" "apt-get update -qq && apt-get install -y git"
             else
-                yum install -y git || dnf install -y git
+                run_cmd "安装 Git" "yum install -y git || dnf install -y git"
             fi
             ;;
         mysql)
             if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-                apt-get update -qq
-                apt-get install -y mysql-server
-                systemctl enable mysql
-                systemctl start mysql
+                run_cmd "安装 MySQL Server" "apt-get update -qq && apt-get install -y mysql-server" && \
+                systemctl enable mysql && systemctl start mysql
             else
-                yum install -y mysql-server || dnf install -y mysql-server
-                systemctl enable mysqld
-                systemctl start mysqld
+                run_cmd "安装 MySQL Server" "yum install -y mysql-server || dnf install -y mysql-server" && \
+                systemctl enable mysqld && systemctl start mysqld
             fi
             ;;
         redis)
             if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-                apt-get update -qq
-                apt-get install -y redis-server
-                systemctl enable redis-server
-                systemctl start redis-server
+                run_cmd "安装 Redis" "apt-get update -qq && apt-get install -y redis-server" && \
+                systemctl enable redis-server && systemctl start redis-server
             else
-                yum install -y redis || dnf install -y redis
-                systemctl enable redis
-                systemctl start redis
+                run_cmd "安装 Redis" "yum install -y redis || dnf install -y redis" && \
+                systemctl enable redis && systemctl start redis
             fi
             ;;
         postgresql)
-            read -p "输入 PostgreSQL 版本 (如 14, 15, 16，默认 15): " pg_ver
+            read -r -p "输入 PostgreSQL 版本 (如 14, 15, 16，默认 15): " pg_ver
             pg_ver=${pg_ver:-15}
             if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-                apt-get update -qq
-                apt-get install -y postgresql postgresql-contrib
+                run_cmd "安装 PostgreSQL" "apt-get update -qq && apt-get install -y postgresql postgresql-contrib"
             else
-                yum install -y postgresql-server postgresql-contrib || dnf install -y postgresql-server postgresql-contrib
-                postgresql-setup initdb 2>/dev/null
-                systemctl enable postgresql
-                systemctl start postgresql
+                run_cmd "安装 PostgreSQL" "yum install -y postgresql-server postgresql-contrib || dnf install -y postgresql-server postgresql-contrib" && \
+                postgresql-setup initdb 2>/dev/null && \
+                systemctl enable postgresql && systemctl start postgresql
             fi
             ;;
         mongodb)
             if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-                apt-get install -y gnupg curl
-                curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor
+                run_cmd "安装 MongoDB 7.0" "apt-get install -y gnupg curl && curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor" && \
                 echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] http://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" \
-                    | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
-                apt-get update -qq
-                apt-get install -y mongodb-org
+                    | tee /etc/apt/sources.list.d/mongodb-org-7.0.list && \
+                apt-get update -qq && apt-get install -y mongodb-org
             else
                 tee /etc/yum.repos.d/mongodb-org-7.0.repo << 'REPO'
 [mongodb-org-7.0]
@@ -180,10 +163,9 @@ gpgcheck=1
 enabled=1
 gpgkey=https://www.mongodb.org/static/pgp/server-7.0.asc
 REPO
-                yum install -y mongodb-org || dnf install -y mongodb-org
+                run_cmd "安装 MongoDB 7.0" "yum install -y mongodb-org || dnf install -y mongodb-org"
             fi
-            systemctl enable mongod
-            systemctl start mongod
+            systemctl enable mongod && systemctl start mongod
             ;;
     esac
 
@@ -227,16 +209,11 @@ manage_ssl() {
     # 检查 certbot
     if ! command_exists certbot; then
         print_warn "certbot 未安装"
-        if confirm "是否安装 certbot?"; then
-            local os_type=$(detect_os)
-            if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-                apt-get update -qq
-                apt-get install -y certbot python3-certbot-nginx
-            else
-                yum install -y certbot python3-certbot-nginx || dnf install -y certbot python3-certbot-nginx
-            fi
+        local os_type=$(detect_os)
+        if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
+            run_cmd "安装 certbot" "apt-get update -qq && apt-get install -y certbot python3-certbot-nginx"
         else
-            return
+            run_cmd "安装 certbot" "yum install -y certbot python3-certbot-nginx || dnf install -y certbot python3-certbot-nginx"
         fi
     fi
 
@@ -250,11 +227,11 @@ manage_ssl() {
 
 EOF
 
-    read -p "请选择 [0-4]: " choice
+    read -r -p "请选择 [0-4]: " choice
 
     case $choice in
         1)
-            read -p "输入域名 (如 example.com): " domain
+            read -r -p "输入域名 (如 example.com): " domain
             if [ -z "$domain" ]; then
                 return
             fi
@@ -263,12 +240,12 @@ EOF
             echo -e "${BOLD}验证方式:${NC}"
             echo "1. Nginx 插件 (需已配置 Nginx)"
             echo "2. 独立模式 (需 80 端口可用)"
-            read -p "请选择 [1-2]: " method
+            read -r -p "请选择 [1-2]: " method
 
             if [ "$method" = "1" ]; then
-                certbot --nginx -d "$domain"
+                run_cmd "申请 SSL 证书 (Nginx 插件): $domain" "certbot --nginx -d '$domain'"
             else
-                certbot certonly --standalone -d "$domain"
+                run_cmd "申请 SSL 证书 (standalone): $domain" "certbot certonly --standalone -d '$domain'"
             fi
 
             if [ $? -eq 0 ]; then
@@ -280,20 +257,18 @@ EOF
             ;;
         2)
             print_info "正在续期证书..."
-            certbot renew
+            run_cmd "续期 SSL 证书" "certbot renew"
             print_success "续期完成"
             ;;
         3)
-            certbot certificates
+            show_cmd "查看已有证书" "certbot certificates"
             ;;
         4)
-            read -p "输入要吊销的域名: " domain
+            read -r -p "输入要吊销的域名: " domain
             if [ -n "$domain" ]; then
-                if confirm "确定吊销 $domain 的证书?"; then
-                    certbot revoke --cert-name "$domain"
-                    print_success "证书已吊销"
-                    log_action "吊销了 SSL 证书: $domain"
-                fi
+                run_cmd "吊销证书: $domain" "certbot revoke --cert-name '$domain'"
+                print_success "证书已吊销"
+                log_action "吊销了 SSL 证书: $domain"
             fi
             ;;
         0) return ;;
@@ -323,7 +298,7 @@ show_templates() {
 
 EOF
 
-    read -p "请选择 [0-5]: " choice
+    read -r -p "请选择 [0-5]: " choice
 
     case $choice in
         1) template_nginx_static ;;
@@ -340,8 +315,8 @@ EOF
 }
 
 template_nginx_static() {
-    read -p "输入域名 (如 example.com): " domain
-    read -p "输入站点根目录 (如 /var/www/html): " root_dir
+    read -r -p "输入域名 (如 example.com): " domain
+    read -r -p "输入站点根目录 (如 /var/www/html): " root_dir
     domain=${domain:-example.com}
     root_dir=${root_dir:-/var/www/html}
 
@@ -387,8 +362,8 @@ TEOF
 }
 
 template_nginx_proxy() {
-    read -p "输入域名: " domain
-    read -p "输入后端地址 (如 http://127.0.0.1:3000): " backend
+    read -r -p "输入域名: " domain
+    read -r -p "输入后端地址 (如 http://127.0.0.1:3000): " backend
     domain=${domain:-example.com}
     backend=${backend:-http://127.0.0.1:3000}
 
@@ -432,7 +407,7 @@ TEOF
 }
 
 template_nginx_https() {
-    read -p "输入域名: " domain
+    read -r -p "输入域名: " domain
     domain=${domain:-example.com}
 
     local conf_file="/etc/nginx/sites-available/$domain"
@@ -497,7 +472,7 @@ template_docker_mirror() {
         return
     fi
 
-    read -p "输入镜像加速地址 (留空使用默认): " mirror_url
+    read -r -p "输入镜像加速地址 (留空使用默认): " mirror_url
     mirror_url=${mirror_url:-"https://mirror.ccs.tencentyun.com"}
 
     mkdir -p /etc/docker
@@ -524,7 +499,7 @@ TEOF
 
 template_docker_compose() {
     local output_dir
-    read -p "输入输出目录 (默认当前目录): " output_dir
+    read -r -p "输入输出目录 (默认当前目录): " output_dir
     output_dir=${output_dir:-.}
 
     local compose_file="$output_dir/docker-compose.yml"
@@ -539,7 +514,7 @@ template_docker_compose() {
 3. LNMP (Nginx + MySQL + PHP-FPM)
 EOF
 
-    read -p "请选择 [1-3]: " tmpl_choice
+    read -r -p "请选择 [1-3]: " tmpl_choice
 
     case $tmpl_choice in
         1)
@@ -668,7 +643,7 @@ deploy_stack() {
 
 EOF
 
-    read -p "请选择 [0-3]: " choice
+    read -r -p "请选择 [0-3]: " choice
 
     case $choice in
         1) deploy_lnmp ;;
@@ -694,9 +669,9 @@ deploy_lnmp() {
         print_info "Nginx 已安装，跳过"
     else
         if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-            apt-get update -qq && apt-get install -y nginx
+            run_cmd "安装 Nginx" "apt-get update -qq && apt-get install -y nginx"
         else
-            yum install -y nginx || dnf install -y nginx
+            run_cmd "安装 Nginx" "yum install -y nginx || dnf install -y nginx"
         fi
         systemctl enable nginx && systemctl start nginx
     fi
@@ -709,10 +684,10 @@ deploy_lnmp() {
         print_info "MySQL 已安装，跳过"
     else
         if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-            apt-get install -y mysql-server
+            run_cmd "安装 MySQL Server" "apt-get install -y mysql-server"
             systemctl enable mysql && systemctl start mysql
         else
-            yum install -y mysql-server || dnf install -y mysql-server
+            run_cmd "安装 MySQL Server" "yum install -y mysql-server || dnf install -y mysql-server"
             systemctl enable mysqld && systemctl start mysqld
         fi
     fi
@@ -725,11 +700,10 @@ deploy_lnmp() {
         print_info "PHP 已安装，跳过"
     else
         if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-            apt-get install -y php-fpm php-mysql php-common php-cli php-gd php-curl php-mbstring php-xml
+            run_cmd "安装 PHP-FPM + 扩展" "apt-get install -y php-fpm php-mysql php-common php-cli php-gd php-curl php-mbstring php-xml"
             systemctl enable php*-fpm && systemctl start php*-fpm
         else
-            yum install -y php-fpm php-mysqlnd php-cli php-gd php-curl php-mbstring php-xml \
-                || dnf install -y php-fpm php-mysqlnd php-cli php-gd php-curl php-mbstring php-xml
+            run_cmd "安装 PHP-FPM + 扩展" "yum install -y php-fpm php-mysqlnd php-cli php-gd php-curl php-mbstring php-xml || dnf install -y php-fpm php-mysqlnd php-cli php-gd php-curl php-mbstring php-xml"
             systemctl enable php-fpm && systemctl start php-fpm
         fi
     fi
@@ -763,13 +737,13 @@ deploy_docker_dev() {
     if command_exists docker; then
         print_info "Docker 已安装，跳过"
     else
-        if confirm "使用官方脚本安装 Docker?"; then
-            curl -fsSL https://get.docker.com | sh
+        if confirm_yes "使用官方脚本安装 Docker?"; then
+            run_cmd "使用官方脚本安装 Docker" "curl -fsSL https://get.docker.com | sh"
         else
             if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-                apt-get update -qq && apt-get install -y docker.io docker-compose
+                run_cmd "安装 Docker (系统包)" "apt-get update -qq && apt-get install -y docker.io docker-compose"
             else
-                yum install -y docker docker-compose || dnf install -y docker docker-compose
+                run_cmd "安装 Docker (系统包)" "yum install -y docker docker-compose || dnf install -y docker docker-compose"
             fi
         fi
         systemctl enable docker && systemctl start docker
@@ -783,23 +757,18 @@ deploy_docker_dev() {
         print_info "Docker Compose 已安装，跳过"
     else
         if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-            apt-get install -y docker-compose-plugin 2>/dev/null || apt-get install -y docker-compose
+            run_cmd "安装 Docker Compose" "apt-get install -y docker-compose-plugin 2>/dev/null || apt-get install -y docker-compose"
         else
-            yum install -y docker-compose-plugin || dnf install -y docker-compose-plugin
+            run_cmd "安装 Docker Compose" "yum install -y docker-compose-plugin || dnf install -y docker-compose-plugin"
         fi
     fi
     echo ""
 
     # 3. Portainer
     echo -e "${BOLD}[3/3] 安装 Portainer (可选)${NC}"
-    if confirm "是否安装 Portainer 管理面板?"; then
+    if confirm_yes "是否安装 Portainer 管理面板?"; then
         docker volume create portainer_data 2>/dev/null
-        docker run -d -p 9000:9000 -p 9443:9443 \
-            --name portainer \
-            --restart=unless-stopped \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v portainer_data:/data \
-            portainer/portainer-ce:latest 2>/dev/null
+        run_cmd "启动 Portainer 容器" "docker run -d -p 9000:9000 -p 9443:9443 --name portainer --restart=unless-stopped -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:latest"
 
         if [ $? -eq 0 ]; then
             print_success "Portainer 已启动"
@@ -836,7 +805,7 @@ EOF
 main() {
     while true; do
         show_menu
-        read -p "请选择 [1-4/b]: " choice
+        read -r -p "请选择 [1-4/b]: " choice
 
         case $choice in
             1) install_software ;;

@@ -27,7 +27,7 @@ source "${SCRIPT_DIR}/lib/common.sh"
 source "${SCRIPT_DIR}/lib/os-detect.sh"
 
 # 版本信息
-VERSION="2.0.0"
+VERSION="2.2.0"
 
 # ==================== 主菜单 ====================
 
@@ -113,24 +113,6 @@ dispatch_subcommand() {
     esac
 }
 
-show_subcommand_help() {
-    cat << 'HELP'
-linux-ops-kit v__VERSION__ — Linux 运维工具箱
-
-子命令:
-  init        初始化新服务器（交互模式: ./ops.sh init）
-  user        用户管理（add/list/del）
-  security    安全审计与状态检查（audit/status）
-
-无参数运行进入交互式菜单。
-
-常用示例:
-  ./ops.sh init                              # 交互式初始化向导
-  ./ops.sh init -u jesen -k github:jesen -d  # 快速初始化
-  ./ops.sh user add alice --ssh-key github:alice
-  ./ops.sh security status
-HELP
-}
 
 # ==================== 交互式菜单 ====================
 
@@ -144,7 +126,7 @@ main_menu() {
     # 主菜单循环
     while true; do
         show_main_menu
-        read -p "请选择 [0-8 / 00 退出]: " choice
+        read -r -p "请选择 [0-8 / 00 退出]: " choice
 
         case $choice in
             0) dispatch_subcommand "init" ;;

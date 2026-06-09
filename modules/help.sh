@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 # 命令帮助模块
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,7 +17,7 @@ check_jq() {
     fi
 
     print_warn "此模块需要 jq 工具来解析 JSON 数据"
-    read -p "是否现在安装 jq? [y/N]: " install_jq
+    read -r -p "是否现在安装 jq? [y/N]: " install_jq
 
     if [ "$install_jq" = "y" ] || [ "$install_jq" = "Y" ]; then
         local os_type=$(detect_os)
@@ -55,7 +56,7 @@ search_command() {
     clear
     print_title "=== 搜索命令 ==="
 
-    read -p "输入命令名或关键词: " keyword
+    read -r -p "输入命令名或关键词: " keyword
 
     if [ -z "$keyword" ]; then
         print_warn "请输入关键词"
@@ -81,7 +82,7 @@ search_command() {
 
     echo ""
     echo -e "${CYAN}输入命令名查看详情，或按 b 返回:${NC}"
-    read -p "请选择: " cmd_choice
+    read -r -p "请选择: " cmd_choice
 
     if [ "$cmd_choice" = "b" ] || [ "$cmd_choice" = "B" ]; then
         return
@@ -103,7 +104,7 @@ list_all_commands() {
 
     echo ""
     echo -e "${CYAN}输入命令名查看详情，或按 b 返回:${NC}"
-    read -p "请选择: " cmd_choice
+    read -r -p "请选择: " cmd_choice
 
     if [ "$cmd_choice" = "b" ] || [ "$cmd_choice" = "B" ]; then
         return
@@ -154,7 +155,7 @@ show_command_detail() {
     clear
     print_title "=== 命令详情 ==="
 
-    read -p "输入命令名: " cmd
+    read -r -p "输入命令名: " cmd
 
     if [ -z "$cmd" ]; then
         print_warn "请输入命令名"
@@ -200,7 +201,7 @@ update_data() {
     print_title "=== 更新命令数据 ==="
 
     echo ""
-    read -p "确认更新? [y/N]: " confirm
+    read -r -p "确认更新? [y/N]: " confirm
 
     if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
         return
@@ -257,7 +258,7 @@ main() {
         echo "b. 返回主菜单"
         echo ""
 
-        read -p "请选择 [1-4/b]: " choice
+        read -r -p "请选择 [1-4/b]: " choice
 
         case $choice in
             1) search_command ;;

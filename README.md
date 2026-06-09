@@ -74,7 +74,7 @@ echo "alias ops='/opt/linux-ops-kit/ops.sh'" >> ~/.bashrc && source ~/.bashrc
 ## 主菜单
 
 ```
-=== Linux 运维工具箱 v2.1.0 ===
+=== Linux 运维工具箱 v2.2.0 ===
 
  0. 服务器初始化  - 🆕 新服务器一条命令从 0 到可用
  1. 系统检查      - CPU/内存/磁盘/服务健康检查
@@ -245,6 +245,10 @@ confirm_no "安装 Docker？"     # 确认提示（默认 Yes）
 input_with_default "用户名" "admin"  # 带默认值的输入
 select_option "选择方式" "选项1" "选项2"  # 菜单选择
 
+# 命令透明（变更操作显示命令并确认，只读操作显示命令）
+run_cmd "安装 Nginx" "apt-get install -y nginx"   # 变更操作：显示命令 + 确认后执行
+show_cmd "查看磁盘" "df -h"                        # 只读操作：显示命令 + 直接执行
+
 # 系统检测
 detect_os                # 检测操作系统（简单版）
 detect_os_full           # 完整检测（导出 OS_ID/OS_VERSION/OS_FAMILY）
@@ -300,11 +304,13 @@ check_idempotent "step" "desc"  # 幂等检测
 4. **优雅降级** — 不支持的发行版/功能跳过并提示，不阻塞整体流程
 5. **进度反馈** — 彩色输出每一步的执行状态
 6. **用户友好** — 每条错误消息包含原因解释和修复建议
+7. **命令透明** — 变更操作执行前显示等价命令并要求确认（`run_cmd`），只读操作展示命令供学习（`show_cmd`）
 
 ---
 
 ## 版本
 
+- **v2.2.0** — 🆕 命令透明机制：变更操作执行前显示命令并确认（`run_cmd`），只读操作展示命令供学习（`show_cmd`）
 - **v2.1.0** — 🆕 新增 init 模块（服务器一键初始化）+ Day 2 操作（user/security）
 - **v2.0.0** — 全部 8 个模块实现完成
 - **v1.2.0** — help.sh 模块完成

@@ -32,28 +32,27 @@ do_create_user() {
     local sudo_group
     sudo_group=$(get_sudo_group)
 
+    local create_cmd
     case "$OS_FAMILY" in
         debian)
             # Debian/Ubuntu: 优先 adduser
             if command_exists "adduser"; then
-                adduser --disabled-password --gecos "" "$username" 2>/dev/null
+                create_cmd="adduser --disabled-password --gecos '' '$username'"
             else
-                useradd -m -s /bin/bash "$username"
+                create_cmd="useradd -m -s /bin/bash '$username'"
             fi
             ;;
         rhel)
-            useradd -m -s /bin/bash "$username"
+            create_cmd="useradd -m -s /bin/bash '$username'"
             ;;
         *)
-            useradd -m -s /bin/bash "$username"
+            create_cmd="useradd -m -s /bin/bash '$username'"
             ;;
     esac
 
-    # 设置密码为空（仅允许 SSH Key 登录）
-    passwd -d "$username" 2>/dev/null || true
-
-    # 加入 sudo 组
-    usermod -aG "$sudo_group" "$username"
+    # 创建用户 + 清除密码 + 加入 sudo 组
+    run_cmd "创建用户: $username (sudo 权限, 仅 SSH Key 登录)" \
+        "$create_cmd && passwd -d '$username' && usermod -aG '$sudo_group' '$username'" || return 1
 
     # 验证 sudo 组是否在 sudoers 中启用
     if [ "$sudo_group" = "sudo" ]; then

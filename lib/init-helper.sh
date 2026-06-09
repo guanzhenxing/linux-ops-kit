@@ -4,8 +4,8 @@
 
 # 依赖
 SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-source "${SCRIPT_DIR}/lib/common.sh" 2>/dev/null || true
-source "${SCRIPT_DIR}/lib/os-detect.sh" 2>/dev/null || true
+source "${SCRIPT_DIR}/lib/common.sh" 
+source "${SCRIPT_DIR}/lib/os-detect.sh" 
 
 # ==================== 路径常量 ====================
 
@@ -215,14 +215,6 @@ write_init_state() {
 
     mkdir -p "$(dirname "$INIT_STATE_FILE")"
 
-    # 读取现有状态或初始化
-    local state="{}"
-    if [ -f "$INIT_STATE_FILE" ]; then
-        state=$(cat "$INIT_STATE_FILE")
-    fi
-
-    # 使用简单的 sed 更新 JSON（避免依赖 jq）
-    local new_state
     if [ "$step_name" = "__init__" ]; then
         # 第一次写入，创建完整结构
         cat > "$INIT_STATE_FILE" << STATEFILE
@@ -302,7 +294,7 @@ pkg_installed() {
     case "$OS_FAMILY" in
         debian) dpkg -l "$pkg" 2>/dev/null | grep -q "^ii" ;;
         rhel)   rpm -q "$pkg" &>/dev/null ;;
-        *)      command -v "$pkg" &>/dev/null ;;
+        *)      (dpkg -l "$pkg" 2>/dev/null | grep -q "^ii") || (rpm -q "$pkg" &>/dev/null) || return 1 ;;
     esac
 }
 

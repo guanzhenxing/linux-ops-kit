@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # ============================================================
 # linux-ops-kit — Day 2 操作：用户管理
 # ============================================================
@@ -64,22 +65,23 @@ do_user_add() {
 
     # Debian/Ubuntu 优先用 adduser（Perl 脚本，自动创建 home、复制 skel、设 shell）
     # RHEL 系只有 useradd（底层 C 程序，必须手动指定 -m -s）
+    local create_cmd
     case "$OS_FAMILY" in
         debian)
             if command_exists "adduser"; then
-                adduser --disabled-password --gecos "" "$username" 2>/dev/null
+                create_cmd="adduser --disabled-password --gecos '' '$username'"
             else
-                useradd -m -s /bin/bash "$username"
+                create_cmd="useradd -m -s /bin/bash '$username'"
             fi
             ;;
         *)
-            useradd -m -s /bin/bash "$username"
+            create_cmd="useradd -m -s /bin/bash '$username'"
             ;;
     esac
 
     # 删除密码：强制该用户只能通过 SSH Key 登录，禁止密码认证
-    passwd -d "$username" 2>/dev/null || true
-    usermod -aG "$sudo_group" "$username"
+    run_cmd "创建用户: $username (sudo 权限, 仅 SSH Key 登录)" \
+        "$create_cmd && passwd -d '$username' && usermod -aG '$sudo_group' '$username'" || return 1
 
     print_result ok "用户" "$username 已创建 (sudo 权限)"
 
@@ -161,19 +163,16 @@ do_user_del() {
         return 1
     fi
 
-    if ! confirm "确定要删除用户 $username？"; then
-        print_info "已取消"
-        return 0
-    fi
-
     # 安全策略：默认保留 home 目录。用户数据可能还有价值，
     # 只有显式传 --purge 时才彻底删除。这是运维安全的基本操作习惯。
     if [ "$purge" = "yes" ]; then
-        userdel -r "$username" 2>/dev/null
-        print_result ok "删除用户" "$username (含 home 目录)"
+        if run_cmd "删除用户: $username (含 home 目录)" "userdel -r '$username'"; then
+            print_result ok "删除用户" "$username (含 home 目录)"
+        fi
     else
-        userdel "$username" 2>/dev/null
-        print_result ok "删除用户" "$username (home 目录已保留)"
+        if run_cmd "删除用户: $username (保留 home 目录)" "userdel '$username'"; then
+            print_result ok "删除用户" "$username (home 目录已保留)"
+        fi
     fi
 }
 

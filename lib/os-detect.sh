@@ -37,7 +37,7 @@ detect_os_full() {
         OS_FAMILY="unknown"
     fi
 
-    export OS_ID OS_VERSION OS_FAMILY
+    export OS_ID OS_VERSION OS_FAMILY  # exported for sourced modules
 }
 
 # 向后兼容：保留原有的 detect_os（简单版）

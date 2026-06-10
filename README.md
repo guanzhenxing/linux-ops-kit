@@ -102,6 +102,8 @@ echo "alias ops='/opt/linux-ops-kit/ops.sh'" >> ~/.bashrc && source ~/.bashrc
 ./ops.sh docker ps                   # 容器状态总览
 ./ops.sh docker logs                 # 选择容器查看日志
 ./ops.sh docker diagnose             # Docker 健康检查
+./ops.sh docker save                 # 导出镜像
+./ops.sh docker load                 # 导入镜像
 ```
 
 ---
@@ -147,7 +149,7 @@ linux-ops-kit/
 | **🆕 服务器初始化** | ✅ 完成 | 交互式向导、一键初始化、SSH 安全验证、自动回滚 |
 | **🆕 用户管理** | ✅ 完成 | 添加/列出/删除用户，SSH Key 导入 |
 | **🆕 安全审计** | ✅ 完成 | SSH/防火墙/fail2ban/自动更新状态检查、最近登录 |
-| **🆕 Docker 管理** | ✅ 完成 | 容器状态/日志/Shell/清理/诊断/Compose/镜像分析 |
+| **🆕 Docker 管理** | ✅ 完成 | 容器状态/日志/Shell/清理/诊断/Compose/镜像/导入导出 |
 | 系统检查 | ✅ 完成 | CPU/内存/磁盘/服务一键检查，带健康告警 |
 | 服务管理 | ✅ 完成 | 服务启动/停止/重启/自启动管理 |
 | 日志查看 | ✅ 完成 | 系统日志/服务日志/实时追踪/搜索 |
@@ -235,6 +237,8 @@ sudo ./ops.sh init --rollback
 ./ops.sh docker prune       # 清理 Docker 资源
 ./ops.sh docker diagnose    # Docker 健康检查
 ./ops.sh docker compose     # Compose 项目管理
+./ops.sh docker save        # 导出镜像
+./ops.sh docker load        # 导入镜像
 ```
 
 ---

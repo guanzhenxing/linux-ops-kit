@@ -11,6 +11,10 @@ set -uo pipefail
 #   - diagnose: Docker 健康检查（daemon/端口/重启/OOM）
 #   - compose: Compose 服务管理（状态/重启/重建）
 #   - image:   镜像空间分析
+#   - save:    导出镜像为 tar 文件
+#   - load:    从 tar 文件导入镜像
+#   - export:  导出容器文件系统为 tar 文件
+#   - import:  从 tar 文件创建镜像
 #
 # 无子命令运行 → 交互式菜单
 #
@@ -54,6 +58,10 @@ show_docker_help() {
   diagnose       Docker 健康检查
   compose        Compose 服务管理
   image          镜像空间分析
+  save           导出镜像为 tar 文件
+  load           从 tar 文件导入镜像
+  export         导出容器文件系统为 tar 文件
+  import         从 tar 文件创建镜像
   help           显示此帮助
 
 无子命令运行进入交互式菜单。
@@ -66,6 +74,10 @@ show_docker_help() {
   ./ops.sh docker diagnose     # Docker 健康检查
   ./ops.sh docker compose      # Compose 项目管理
   ./ops.sh docker image        # 镜像空间分析
+  ./ops.sh docker save         # 导出镜像
+  ./ops.sh docker load         # 导入镜像
+  ./ops.sh docker export       # 导出容器
+  ./ops.sh docker import       # 从 tar 创建镜像
 HELP
 }
 
@@ -672,6 +684,161 @@ do_docker_image() {
     pause
 }
 
+# ==================== P2: 镜像导出 (save) ====================
+
+do_docker_save() {
+    clear
+    print_title "=== 导出镜像 ==="
+
+    # 列出镜像让用户选择
+    local image_list
+    image_list=$(docker images --format '{{.Repository}}:{{.Tag}}' 2>/dev/null | grep -v "<none>")
+
+    if [ -z "$image_list" ]; then
+        print_error "没有可导出的镜像"
+        echo ""
+        pause
+        return 1
+    fi
+
+    local images=()
+    while IFS= read -r img; do
+        images+=("$img")
+    done <<< "$image_list"
+
+    echo -e "${CYAN}选择要导出的镜像:${NC}"
+    for i in "${!images[@]}"; do
+        local idx=$((i+1))
+        local size
+        size=$(docker images --format '{{.Size}}' "${images[$i]}" 2>/dev/null)
+        echo "  $idx. ${images[$i]} ${CYAN}(${size})${NC}"
+    done
+    echo ""
+
+    read -r -p "请选择 [1-${#images[@]}]: " choice
+    if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt "${#images[@]}" ]; then
+        print_error "无效选择"
+        return 1
+    fi
+
+    local image="${images[$((choice-1))]}"
+    local safe_name
+    safe_name=$(echo "$image" | tr '/:' '_')
+    local default_file="${safe_name}.tar"
+
+    read -r -p "输出文件路径 [默认: ${default_file}]: " out_file
+    out_file="${out_file:-$default_file}"
+
+    run_cmd "导出镜像: $image" "docker save -o '$out_file' '$image'"
+
+    if [ -f "$out_file" ]; then
+        local fsize
+        fsize=$(du -sh "$out_file" 2>/dev/null | awk '{print $1}')
+        print_success "已导出: ${out_file} (${fsize})"
+    fi
+
+    echo ""
+    pause
+}
+
+# ==================== P2: 镜像导入 (load) ====================
+
+do_docker_load() {
+    clear
+    print_title "=== 导入镜像 ==="
+
+    local file="${1:-}"
+    if [ -z "$file" ]; then
+        read -r -p "输入 tar 文件路径: " file
+    fi
+
+    if [ -z "$file" ]; then
+        print_error "未指定文件"
+        return 1
+    fi
+
+    if [ ! -f "$file" ]; then
+        print_error "文件不存在: $file"
+        return 1
+    fi
+
+    local fsize
+    fsize=$(du -sh "$file" 2>/dev/null | awk '{print $1}')
+    print_info "文件: ${file} (${fsize})"
+
+    run_cmd "导入镜像: $file" "docker load -i '$file'"
+
+    print_success "镜像导入完成"
+    echo ""
+    pause
+}
+
+# ==================== P2: 容器导出 (export) ====================
+
+do_docker_export() {
+    clear
+    print_title "=== 导出容器 ==="
+
+    local container
+    container=$(select_container --all) || return 1
+
+    local safe_name
+    safe_name=$(echo "$container" | tr '/:' '_')
+    local default_file="${safe_name}.tar"
+
+    read -r -p "输出文件路径 [默认: ${default_file}]: " out_file
+    out_file="${out_file:-$default_file}"
+
+    run_cmd "导出容器: $container" "docker export -o '$out_file' '$container'"
+
+    if [ -f "$out_file" ]; then
+        local fsize
+        fsize=$(du -sh "$out_file" 2>/dev/null | awk '{print $1}')
+        print_success "已导出: ${out_file} (${fsize})"
+    fi
+
+    echo ""
+    pause
+}
+
+# ==================== P2: 容器导入 (import) ====================
+
+do_docker_import() {
+    clear
+    print_title "=== 从 tar 创建镜像 ==="
+
+    local file="${1:-}"
+    if [ -z "$file" ]; then
+        read -r -p "输入 tar 文件路径: " file
+    fi
+
+    if [ -z "$file" ]; then
+        print_error "未指定文件"
+        return 1
+    fi
+
+    if [ ! -f "$file" ]; then
+        print_error "文件不存在: $file"
+        return 1
+    fi
+
+    local fsize
+    fsize=$(du -sh "$file" 2>/dev/null | awk '{print $1}')
+    print_info "文件: ${file} (${fsize})"
+
+    read -r -p "镜像名:tag (如 myapp:latest): " image_name
+    if [ -z "$image_name" ]; then
+        print_error "镜像名不能为空"
+        return 1
+    fi
+
+    run_cmd "从 tar 创建镜像: $image_name" "docker import '$file' '$image_name'"
+
+    print_success "镜像已创建: $image_name"
+    echo ""
+    pause
+}
+
 # ==================== 交互式菜单 ====================
 
 show_docker_menu() {
@@ -694,6 +861,10 @@ show_docker_menu() {
  5. Docker 诊断     — 检查 daemon/端口/重启/OOM
  6. Compose 管理    — 服务状态/重启/重建
  7. 镜像分析        — 占用空间/悬空镜像
+ 8. 导出镜像        — docker save → tar 文件
+ 9. 导入镜像        — tar 文件 → docker load
+10. 导出容器        — docker export → tar 文件
+11. 导入容器        — tar 文件 → docker import
  0. 返回
 
 EOF
@@ -702,7 +873,7 @@ EOF
 docker_interactive_menu() {
     while true; do
         show_docker_menu
-        read -r -p "请选择 [0-7]: " choice
+        read -r -p "请选择 [0-11]: " choice
 
         case $choice in
             1) do_docker_status ;;
@@ -712,9 +883,13 @@ docker_interactive_menu() {
             5) do_docker_diagnose ;;
             6) do_docker_compose ;;
             7) do_docker_image ;;
+            8) do_docker_save ;;
+            9) do_docker_load ;;
+            10) do_docker_export ;;
+            11) do_docker_import ;;
             0) return 0 ;;
             *)
-                print_error "无效选择"
+                print_error "无效选择，请输入 0-11"
                 sleep 1
                 ;;
         esac
@@ -750,6 +925,18 @@ main_docker() {
             ;;
         image|images)
             do_docker_image
+            ;;
+        save)
+            do_docker_save
+            ;;
+        load)
+            do_docker_load "$@"
+            ;;
+        export)
+            do_docker_export
+            ;;
+        import)
+            do_docker_import "$@"
             ;;
         help|--help|-h)
             show_docker_help

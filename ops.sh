@@ -10,6 +10,7 @@
 #   init      → modules/init.sh（服务器初始化，最核心）
 #   user      → modules/user.sh（Day 2 用户管理）
 #   security  → modules/security-audit.sh（Day 2 安全审计）
+#   docker    → modules/docker.sh（Day 2 Docker 管理）
 #
 # 无参数运行 → 交互式菜单 → 各模块独立脚本
 #
@@ -27,7 +28,7 @@ source "${SCRIPT_DIR}/lib/common.sh"
 source "${SCRIPT_DIR}/lib/os-detect.sh"
 
 # 版本信息
-VERSION="2.2.0"
+VERSION="2.3.0"
 
 # ==================== 主菜单 ====================
 
@@ -45,6 +46,7 @@ show_main_menu() {
  6. 监控告警      - 设置监控阈值/告警
  7. 快捷安装      - Nginx/Docker/SSL证书
  8. 命令帮助      - 搜索/查看 Linux 命令说明
+ 9. Docker 管理    - 容器/镜像/Compose 管理
  00. 退出
 
 EOF
@@ -100,6 +102,15 @@ dispatch_subcommand() {
                 exit 1
             fi
             ;;
+        docker)
+            local docker_file="${SCRIPT_DIR}/modules/docker.sh"
+            if [ -f "$docker_file" ]; then
+                bash "$docker_file" "$@"
+            else
+                print_error "docker 模块未安装"
+                exit 1
+            fi
+            ;;
         help|--help|-h)
             show_subcommand_help
             ;;
@@ -126,7 +137,7 @@ main_menu() {
     # 主菜单循环
     while true; do
         show_main_menu
-        read -r -p "请选择 [0-8 / 00 退出]: " choice
+        read -r -p "请选择 [0-9 / 00 退出]: " choice
 
         case $choice in
             0) dispatch_subcommand "init" ;;
@@ -138,12 +149,13 @@ main_menu() {
             6) route_to_module "monitor" ;;
             7) route_to_module "install" ;;
             8) route_to_module "help" ;;
+            9) dispatch_subcommand "docker" ;;
             00)
                 print_info "退出运维工具箱"
                 exit 0
                 ;;
             *)
-                print_error "无效选择，请输入 0-8"
+                print_error "无效选择，请输入 0-9"
                 sleep 1
                 ;;
         esac
@@ -170,6 +182,7 @@ linux-ops-kit v${VERSION} — Linux 运维工具箱
   init        初始化新服务器（交互模式: ./ops.sh init）
   user        用户管理（add/list/del）
   security    安全审计与状态检查（audit/status）
+  docker      Docker 管理（status/logs/shell/clean/diagnose/compose/images）
 
 无参数运行进入交互式菜单。
 
@@ -178,6 +191,8 @@ linux-ops-kit v${VERSION} — Linux 运维工具箱
   ./ops.sh init -u jesen -k github:jesen -d  # 快速初始化
   ./ops.sh user add alice --ssh-key github:alice
   ./ops.sh security status
+  ./ops.sh docker status                     # 容器状态总览
+  ./ops.sh docker logs                       # 选择容器查看日志
 HELPTEXT
 }
 

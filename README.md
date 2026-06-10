@@ -74,7 +74,7 @@ echo "alias ops='/opt/linux-ops-kit/ops.sh'" >> ~/.bashrc && source ~/.bashrc
 ## 主菜单
 
 ```
-=== Linux 运维工具箱 v2.2.0 ===
+=== Linux 运维工具箱 v2.3.0 ===
 
  0. 服务器初始化  - 🆕 新服务器一条命令从 0 到可用
  1. 系统检查      - CPU/内存/磁盘/服务健康检查
@@ -85,6 +85,7 @@ echo "alias ops='/opt/linux-ops-kit/ops.sh'" >> ~/.bashrc && source ~/.bashrc
  6. 监控告警      - 设置监控阈值/告警
  7. 快捷安装      - Nginx/Docker/SSL证书
  8. 命令帮助      - 搜索/查看 Linux 命令说明
+ 9. Docker 管理    - 容器/镜像/Compose 管理
 00. 退出
 ```
 
@@ -98,6 +99,9 @@ echo "alias ops='/opt/linux-ops-kit/ops.sh'" >> ~/.bashrc && source ~/.bashrc
 ./ops.sh user list                   # 列出用户
 ./ops.sh security status             # 安全状态检查
 ./ops.sh security audit              # 完整安全审计
+./ops.sh docker status               # 容器状态总览
+./ops.sh docker logs                 # 选择容器查看日志
+./ops.sh docker diagnose             # Docker 健康检查
 ```
 
 ---
@@ -120,6 +124,7 @@ linux-ops-kit/
 │   ├── init-software.sh      # 🆕 软件安装（常用工具/Docker CE）
 │   ├── user.sh               # 🆕 Day 2 用户管理
 │   ├── security-audit.sh     # 🆕 Day 2 安全审计
+│   ├── docker.sh             # 🆕 Day 2 Docker 管理
 │   ├── check.sh              # 系统检查
 │   ├── service.sh            # 服务管理
 │   ├── log.sh                # 日志查看
@@ -142,6 +147,7 @@ linux-ops-kit/
 | **🆕 服务器初始化** | ✅ 完成 | 交互式向导、一键初始化、SSH 安全验证、自动回滚 |
 | **🆕 用户管理** | ✅ 完成 | 添加/列出/删除用户，SSH Key 导入 |
 | **🆕 安全审计** | ✅ 完成 | SSH/防火墙/fail2ban/自动更新状态检查、最近登录 |
+| **🆕 Docker 管理** | ✅ 完成 | 容器状态/日志/Shell/清理/诊断/Compose/镜像分析 |
 | 系统检查 | ✅ 完成 | CPU/内存/磁盘/服务一键检查，带健康告警 |
 | 服务管理 | ✅ 完成 | 服务启动/停止/重启/自启动管理 |
 | 日志查看 | ✅ 完成 | 系统日志/服务日志/实时追踪/搜索 |
@@ -221,6 +227,14 @@ sudo ./ops.sh init --rollback
 # 安全审计
 ./ops.sh security status    # 快速安全状态
 ./ops.sh security audit     # 完整安全审计
+
+# Docker 管理
+./ops.sh docker status      # 容器状态总览
+./ops.sh docker logs        # 选择容器查看日志
+./ops.sh docker shell       # 进入容器 Shell
+./ops.sh docker clean       # 清理 Docker 资源
+./ops.sh docker diagnose    # Docker 健康检查
+./ops.sh docker compose     # Compose 项目管理
 ```
 
 ---
@@ -293,6 +307,13 @@ check_idempotent "step" "desc"  # 幂等检测
   - [x] SSH 自动验证 + 失败回滚
   - [x] 安全审计（只读模式）
   - [x] Day 2 操作（user/security 子命令）
+  - [x] **第七阶段：Docker 管理 (docker 模块) 🆕**
+    - [x] 容器状态总览 + 资源占用
+    - [x] 容器日志 + Shell 进入
+    - [x] Docker 资源清理
+    - [x] Docker 健康诊断
+    - [x] Compose 项目管理
+    - [x] 镜像空间分析
 
 ---
 
@@ -310,7 +331,7 @@ check_idempotent "step" "desc"  # 幂等检测
 
 ## 版本
 
-- **v2.2.0** — 🆕 命令透明机制：变更操作执行前显示命令并确认（`run_cmd`），只读操作展示命令供学习（`show_cmd`）
+- **v2.3.0** — 🆕 新增 Docker 管理模块（status/logs/shell/clean/diagnose/compose/images）
 - **v2.1.0** — 🆕 新增 init 模块（服务器一键初始化）+ Day 2 操作（user/security）
 - **v2.0.0** — 全部 8 个模块实现完成
 - **v1.2.0** — help.sh 模块完成

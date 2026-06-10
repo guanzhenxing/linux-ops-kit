@@ -16,19 +16,6 @@ source "${SCRIPT_DIR}/lib/common.sh"
 source "${SCRIPT_DIR}/lib/os-detect.sh"
 source "${SCRIPT_DIR}/lib/init-helper.sh"
 
-show_security_help() {
-    cat << 'HELP'
-用法: ./ops.sh security <子命令>
-
-子命令:
-  audit      完整安全审计（只读，不修改）
-  status     快速安全状态摘要
-
-示例:
-  ./ops.sh security audit
-  ./ops.sh security status
-HELP
-}
 
 # ==================== 安全审计 ====================
 
@@ -212,17 +199,47 @@ do_security_status() {
             fi
             ;;
     esac
+}
 
-    # 最近登录
-    local last_login
-    last_login=$(last -n 1 2>/dev/null | head -1 | awk '{print $1 " 从 " $3 " 于 " $4" "$5" "$6" "$7}')
-    echo -e "最近登录:   ${GREEN}${last_login}${NC}"
+# ==================== 子命令帮助 ====================
 
-    echo ""
+show_security_help() {
+    cat << 'HELP'
+用法: ./ops.sh security <子命令>
 
-    if [ "$ssh_ok" = false ]; then
-        echo -e "${YELLOW}⚠ 建议: 运行 ./ops.sh init --harden-ssh 加固 SSH 配置${NC}"
-    fi
+子命令:
+  audit      完整安全审计（只读，不修改）
+  status     快速安全状态摘要
+  help       显示此帮助
+
+无子命令运行进入交互式菜单。
+
+示例:
+  ./ops.sh security audit
+  ./ops.sh security status
+HELP
+}
+
+# ==================== 交互式菜单 ====================
+
+security_interactive_menu() {
+    while true; do
+        clear
+        print_title "=== 安全审计与状态检查 ==="
+        echo ""
+        echo "1. 完整安全审计"
+        echo "2. 快速安全状态"
+        echo "b. 返回"
+        echo ""
+        read -r -p "请选择 [1-2/b]: " choice
+
+        case $choice in
+            1) do_security_audit_full ;;
+            2) do_security_status ;;
+            b|B) return 0 ;;
+            *) print_error "无效选择"; sleep 1 ;;
+        esac
+    done
 }
 
 # ==================== 主入口 ====================
@@ -238,8 +255,12 @@ main_security() {
         status)
             do_security_status
             ;;
+        "")
+            security_interactive_menu
+            ;;
         *)
             show_security_help
+            exit 1
             ;;
     esac
 }

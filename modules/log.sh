@@ -427,9 +427,9 @@ b. 返回主菜单
 EOF
 }
 
-# ==================== 主循环 ====================
+# ==================== 交互式菜单 ====================
 
-main() {
+log_interactive_menu() {
     while true; do
         show_menu
         read -r -p "请选择 [1-4/b]: " choice
@@ -448,4 +448,27 @@ main() {
     done
 }
 
-main "$@"
+# ==================== 主入口 ====================
+
+main_log() {
+    local subcmd="${1:-}"
+    shift 2>/dev/null || true
+
+    case "$subcmd" in
+        system|sys)     show_system_log ;;
+        service|svc)    show_service_log ;;
+        follow|tail)    if [ -n "$1" ]; then start_follow "$1"; else follow_log; fi ;;
+        search|grep)    search_log ;;
+        help|--help)    show_log_help ;;
+        "")
+            log_interactive_menu
+            ;;
+        *)
+            print_error "未知子命令: $subcmd"
+            show_log_help
+            exit 1
+            ;;
+    esac
+}
+
+main_log "$@"

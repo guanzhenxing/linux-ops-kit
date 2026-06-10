@@ -106,6 +106,10 @@ parse_args() {
                 OPTS_ROLLBACK="yes"; shift ;;
             --extra-ports)
                 OPTS_EXTRA_PORTS="$2"; shift 2 ;;
+            help)
+                show_usage
+                exit 0
+                ;;
             -h|--help)
                 show_usage
                 exit 0

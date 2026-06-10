@@ -800,25 +800,46 @@ b. 返回主菜单
 EOF
 }
 
-# ==================== 主循环 ====================
+# ==================== 主入口 ====================
 
-main() {
-    while true; do
-        show_menu
-        read -r -p "请选择 [1-4/b]: " choice
+main_install() {
+    local subcmd="${1:-}"
+    shift 2>/dev/null || true
 
-        case $choice in
-            1) install_software ;;
-            2) manage_ssl ;;
-            3) show_templates ;;
-            4) deploy_stack ;;
-            b|B) return 0 ;;
-            *)
-                print_error "无效选择"
-                sleep 1
-                ;;
-        esac
-    done
+    local os_type
+    os_type=$(detect_os)
+
+    case "$subcmd" in
+        nginx)          install_single "nginx" "$os_type" ;;
+        docker)         install_single "docker" "$os_type" ;;
+        nodejs)         install_single "nodejs" "$os_type" ;;
+        git)            install_single "git" "$os_type" ;;
+        mysql)          install_single "mysql" "$os_type" ;;
+        redis)          install_single "redis" "$os_type" ;;
+        postgresql)     install_single "postgresql" "$os_type" ;;
+        mongodb)        install_single "mongodb" "$os_type" ;;
+        ssl|cert)       manage_ssl ;;
+        template)       show_templates ;;
+        lnmp)           deploy_lnmp ;;
+        docker-dev)     deploy_docker_dev ;;
+        help|--help)    show_install_help ;;
+        "")
+            main
+            ;;
+        *)
+            print_error "未知子命令: $subcmd"
+            show_install_help
+            exit 1
+            ;;
+    esac
 }
+  template     配置模板（Nginx/Docker）
+  lnmp         部署 LNMP 环境（Nginx+MySQL+PHP）
+  docker-dev   部署 Docker 开发环境
+  help         显示此帮助
 
-main "$@"
+无子命令运行进入交互式菜单。
+
+示例:
+  ./ops.sh install nginx
+main_install "$@"

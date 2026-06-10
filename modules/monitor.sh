@@ -359,24 +359,26 @@ b. 返回主菜单
 EOF
 }
 
-# ==================== 主循环 ====================
+# ==================== 主入口 ====================
 
-main() {
-    while true; do
-        show_menu
-        read -r -p "请选择 [1-3/b]: " choice
+main_monitor() {
+    local subcmd="${1:-}"
+    shift 2>/dev/null || true
 
-        case $choice in
-            1) realtime_dashboard ;;
-            2) check_thresholds ;;
-            3) generate_report ;;
-            b|B) return 0 ;;
-            *)
-                print_error "无效选择"
-                sleep 1
-                ;;
-        esac
-    done
+    case "$subcmd" in
+        dashboard|dash|real|realtime)   realtime_dashboard ;;
+        check|threshold|alert)          check_thresholds ;;
+        report)                         generate_report ;;
+        help|--help)                    show_monitor_help ;;
+        "")
+            main
+            ;;
+        *)
+            print_error "未知子命令: $subcmd"
+            show_monitor_help
+            exit 1
+            ;;
+    esac
 }
-
-main "$@"
+  ./ops.sh monitor dashboard
+main_monitor "$@"

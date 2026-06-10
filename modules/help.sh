@@ -232,21 +232,32 @@ update_data() {
     pause
 }
 
-# ==================== 主循环 ====================
 
-main() {
-    # 检查 jq 依赖
-    if ! check_jq; then
-        return 1
-    fi
+# ==================== 子命令帮助 ====================
 
-    # 检查数据文件
-    if [ ! -f "$DATA_FILE" ]; then
-        print_warn "数据文件不存在，请先更新数据"
-        pause
-        update_data
-    fi
+show_help_help() {
+    cat << 'HELP'
+用法: ./ops.sh help <子命令> [参数]
 
+子命令:
+  search <关键词>   搜索命令
+  list              列出所有命令
+  detail <命令名>   查看命令详情
+  update            更新命令数据
+  help              显示此帮助
+
+无子命令运行进入交互式菜单。
+
+示例:
+  ./ops.sh help search rsync
+  ./ops.sh help list
+  ./ops.sh help detail ls
+HELP
+}
+
+# ==================== 交互式菜单 ====================
+
+help_interactive_menu() {
     while true; do
         clear
         print_title "=== Linux 命令帮助 ==="
@@ -274,4 +285,51 @@ main() {
     done
 }
 
-main "$@"
+# ==================== 主入口 ====================
+
+main_help() {
+    # 依赖检查
+    if ! check_jq; then
+        return 1
+    fi
+    if [ ! -f "$DATA_FILE" ]; then
+        print_warn "数据文件不存在，请先更新数据"
+        pause
+        update_data
+    fi
+
+    local subcmd="${1:-}"
+    shift 2>/dev/null || true
+
+    case "$subcmd" in
+        search|find|grep)
+            search_command
+            ;;
+        list|all|ls)
+            list_all_commands
+            ;;
+        detail|show|man)
+            if [ -n "$1" ]; then
+                show_command_detail_direct "$1"
+            else
+                show_command_detail
+            fi
+            ;;
+        update|download)
+            update_data
+            ;;
+        help|--help)
+            show_help_help
+            ;;
+        "")
+            help_interactive_menu
+            ;;
+        *)
+            print_error "未知子命令: $subcmd"
+            show_help_help
+            exit 1
+            ;;
+    esac
+}
+
+main_help "$@"

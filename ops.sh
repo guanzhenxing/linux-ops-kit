@@ -52,17 +52,15 @@ show_main_menu() {
 EOF
 }
 
-# ==================== 模块路由 ====================
+# ==================== 统一模块路由（透传参数） ====================
 
-# 路由到对应模块
-route_to_module() {
-    local module=$1
-    local module_file="${SCRIPT_DIR}/modules/${module}.sh"
-
+run_module() {
+    local module_file="${SCRIPT_DIR}/modules/${1}.sh"
+    shift
     if [ -f "$module_file" ]; then
-        bash "$module_file"
+        bash "$module_file" "$@"
     else
-        print_warn "${module} 模块开发中..."
+        print_warn "${1} 模块开发中..."
         pause
     fi
 }
@@ -73,52 +71,31 @@ route_to_module() {
 dispatch_subcommand() {
     local cmd="$1"
     shift
+    [ $# -eq 0 ] && set -- ""
 
     case "$cmd" in
-        init)
-            local init_file="${SCRIPT_DIR}/modules/init.sh"
-            if [ -f "$init_file" ]; then
-                bash "$init_file" "$@"
-            else
-                print_error "init 模块未安装"
-                exit 1
-            fi
-            ;;
-        user)
-            local user_file="${SCRIPT_DIR}/modules/user.sh"
-            if [ -f "$user_file" ]; then
-                bash "$user_file" "$@"
-            else
-                print_error "user 模块未安装"
-                exit 1
-            fi
-            ;;
-        security)
-            local sec_file="${SCRIPT_DIR}/modules/security-audit.sh"
-            if [ -f "$sec_file" ]; then
-                bash "$sec_file" "$@"
-            else
-                print_error "security 模块未安装"
-                exit 1
-            fi
-            ;;
-        docker)
-            local docker_file="${SCRIPT_DIR}/modules/docker.sh"
-            if [ -f "$docker_file" ]; then
-                bash "$docker_file" "$@"
-            else
-                print_error "docker 模块未安装"
-                exit 1
-            fi
-            ;;
+        init)        run_module "init" "$@" ;;
+        check)       run_module "check" "$@" ;;
+        service)     run_module "service" "$@" ;;
+        log)         run_module "log" "$@" ;;
+        network)     run_module "network" "$@" ;;
+        disk)        run_module "disk" "$@" ;;
+        monitor)     run_module "monitor" "$@" ;;
+        install)     run_module "install" "$@" ;;
+        help)        run_module "help" "$@" ;;
+        user)        run_module "user" "$@" ;;
+        security)    run_module "security-audit" "$@" ;;
+        docker)      run_module "docker" "$@" ;;
         help|--help|-h)
             show_subcommand_help
             ;;
         version|--version|-v)
             echo "linux-ops-kit v${VERSION}"
             ;;
+        "")
+            main_menu
+            ;;
         *)
-            # 如果没有子命令，进入交互式菜单
             main_menu
             ;;
     esac
@@ -141,14 +118,14 @@ main_menu() {
 
         case $choice in
             0) dispatch_subcommand "init" ;;
-            1) route_to_module "check" ;;
-            2) route_to_module "service" ;;
-            3) route_to_module "log" ;;
-            4) route_to_module "network" ;;
-            5) route_to_module "disk" ;;
-            6) route_to_module "monitor" ;;
-            7) route_to_module "install" ;;
-            8) route_to_module "help" ;;
+            1) dispatch_subcommand "check" ;;
+            2) dispatch_subcommand "service" ;;
+            3) dispatch_subcommand "log" ;;
+            4) dispatch_subcommand "network" ;;
+            5) dispatch_subcommand "disk" ;;
+            6) dispatch_subcommand "monitor" ;;
+            7) dispatch_subcommand "install" ;;
+            8) dispatch_subcommand "help" ;;
             9) dispatch_subcommand "docker" ;;
             00)
                 print_info "退出运维工具箱"
@@ -178,21 +155,25 @@ show_subcommand_help() {
     cat << HELPTEXT
 linux-ops-kit v${VERSION} — Linux 运维工具箱
 
-子命令:
-  init        初始化新服务器（交互模式: ./ops.sh init）
+所有模块均支持两种使用方式：
+  ./ops.sh <模块>           → 进入交互式菜单
+  ./ops.sh <模块> <子命令>   → 直接执行
+
+模块列表:
+  init        服务器初始化
+  check       系统检查（all/system/cpu/mem/disk/service）
+  service     服务管理（overview/status <name>/start/stop/restart/disable/enable）
+  log         日志查看（system/service/follow/search）
+  network     网络诊断（port/iface/dns/ping/traceroute/firewall）
+  disk        磁盘管理（usage/find-large/clean/mount/lvm/inode）
+  monitor     监控告警（dashboard/check/report）
+  install     快捷安装（nginx/docker/nodejs/mysql/redis/ssl/lnmp 等）
+  help        命令帮助（search/list/detail/update）
   user        用户管理（add/list/del）
   security    安全审计与状态检查（audit/status）
   docker      Docker 管理（ps/logs/exec/prune/diagnose/compose/image/save/load/export/import）
 
 无参数运行进入交互式菜单。
-
-常用示例:
-  ./ops.sh init                              # 交互式初始化向导
-  ./ops.sh init -u jesen -k github:jesen -d  # 快速初始化
-  ./ops.sh user add alice --ssh-key github:alice
-  ./ops.sh security status
-  ./ops.sh docker ps                         # 容器状态总览
-  ./ops.sh docker logs                       # 选择容器查看日志
 HELPTEXT
 }
 

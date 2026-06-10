@@ -179,6 +179,7 @@ do_user_del() {
 # ==================== 主入口 ====================
 
 main_user() {
+
     local subcmd="${1:-}"
     shift 2>/dev/null || true
 
@@ -192,9 +193,14 @@ main_user() {
         del|delete|remove)
             do_user_del "$@"
             ;;
+        "")
+            user_interactive_menu
+            ;;
         *)
             show_user_help
+            exit 1
             ;;
+
     esac
 }
 

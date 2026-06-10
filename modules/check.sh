@@ -309,9 +309,59 @@ show_all_check() {
     pause
 }
 
+# ==================== 子命令帮助 ====================
+
+# ==================== 主入口 ====================
+
+main_check() {
+    local subcmd="${1:-}"
+    shift 2>/dev/null || true
+
+    case "$subcmd" in
+        all|full)     show_all_check ;;
+        system|sys)   show_system_info ;;
+        cpu)          show_cpu_check ;;
+        mem|memory)   show_memory_check ;;
+        disk)         show_disk_check ;;
+        service|svc)  show_service_check ;;
+        help|--help)  show_check_help ;;
+        "") check_interactive_menu ;;
+        *)
+            print_error "未知子命令: $subcmd"
+            show_check_help
+            exit 1
+            ;;
+    esac
+}
+
+# ==================== 子命令帮助 ====================
+
+show_check_help() {
+    cat << 'HELP'
+用法: ./ops.sh check <子命令>
+
+子命令:
+  all               全部检查（同菜单 1）
+  system            系统信息
+  cpu               CPU 检查
+  mem|memory        内存检查
+  disk              磁盘检查
+  service           服务检查
+  help              显示此帮助
+
+无子命令运行进入交互式菜单。
+
+示例:
+  ./ops.sh check all
+  ./ops.sh check cpu
+  ./ops.sh check disk
+HELP
+}
+
+
 # ==================== 主循环 ====================
 
-main() {
+check_interactive_menu() {
     while true; do
         show_menu
         read -r -p "请选择 [1-6/b]: " choice
@@ -331,5 +381,4 @@ main() {
         esac
     done
 }
-
-main "$@"
+main_check "$@"

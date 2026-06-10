@@ -491,25 +491,35 @@ b. 返回主菜单
 EOF
 }
 
-# ==================== 主循环 ====================
+# ==================== 主入口 ====================
 
-main() {
-    while true; do
-        show_menu
-        read -r -p "请选择 [1-4/b]: " choice
+main_disk() {
+    local subcmd="${1:-}"
+    shift 2>/dev/null || true
 
-        case $choice in
-            1) analyze_disk ;;
-            2) clean_disk ;;
-            3) manage_mount ;;
-            4) manage_lvm ;;
-            b|B) return 0 ;;
-            *)
-                print_error "无效选择"
-                sleep 1
-                ;;
-        esac
-    done
+    case "$subcmd" in
+        usage|analyze)      analyze_disk ;;
+        find-large|big)     analyze_disk ;;
+        top|dirs)           analyze_disk ;;
+        inode|inodes)       analyze_disk ;;
+        clean|cleanup)      clean_disk ;;
+        mount|mounts)       manage_mount ;;
+        lvm)                manage_lvm ;;
+        help|--help)        show_disk_help ;;
+        "")
+            main
+            ;;
+        *)
+            print_error "未知子命令: $subcmd"
+            show_disk_help
+            exit 1
+            ;;
+    esac
 }
 
-main "$@"
+无子命令运行进入交互式菜单。
+
+示例:
+  ./ops.sh disk usage
+  ./ops.sh disk find-large /var 10M
+main_disk "$@"

@@ -263,6 +263,56 @@ b. 返回主菜单
 EOF
 }
 
+# ==================== 子命令帮助 ====================
+show_service_help() {
+    cat << 'HELP'
+用法: ./ops.sh service <子命令> [参数]
+
+子命令:
+  overview             服务状态概览
+  status <服务名>      查看服务详细状态
+  start  <服务名>      启动服务
+  stop   <服务名>      停止服务
+  restart <服务名>     重启服务
+  enable <服务名>      设置开机自启
+  disable <服务名>     禁止开机自启
+  help                 显示此帮助
+
+无子命令运行进入交互式菜单。
+
+示例:
+  ./ops.sh service overview
+  ./ops.sh service status nginx
+  ./ops.sh service restart nginx
+HELP
+}
+
+# ==================== 主入口 ====================
+
+main_service() {
+    local subcmd="${1:-}"
+    shift 2>/dev/null || true
+
+    case "$subcmd" in
+        overview|list)  show_service_overview ;;
+        status)         show_service_status "$1" ;;
+        start)          do_service_action "$1" "start" ;;
+        stop)           do_service_action "$1" "stop" ;;
+        restart)        do_service_action "$1" "restart" ;;
+        enable)         do_service_action "$1" "enable" ;;
+        disable)        do_service_action "$1" "disable" ;;
+        help|--help)    show_service_help ;;
+        "")
+            main
+            ;;
+        *)
+            print_error "未知子命令: $subcmd"
+            show_service_help
+            exit 1
+            ;;
+    esac
+}
+
 # ==================== 主循环 ====================
 
 main() {
@@ -282,4 +332,5 @@ main() {
     done
 }
 
-main "$@"
+main_service "$@"
+

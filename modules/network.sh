@@ -491,25 +491,28 @@ b. 返回主菜单
 EOF
 }
 
-# ==================== 主循环 ====================
+# ==================== 主入口 ====================
 
-main() {
-    while true; do
-        show_menu
-        read -r -p "请选择 [1-4/b]: " choice
+main_network() {
+    local subcmd="${1:-}"
+    shift 2>/dev/null || true
 
-        case $choice in
-            1) check_ports ;;
-            2) show_interface ;;
-            3) test_connectivity ;;
-            4) manage_firewall ;;
-            b|B) return 0 ;;
-            *)
-                print_error "无效选择"
-                sleep 1
-                ;;
-        esac
-    done
+    case "$subcmd" in
+        port|ports)         check_ports ;;
+        iface|interface)    show_interface ;;
+        dns|nslookup)       show_interface ;;
+        ping)               test_connectivity ;;
+        traceroute|trace)   test_connectivity ;;
+        firewall|fw)        manage_firewall ;;
+        help|--help)        show_network_help ;;
+        "")
+            main
+            ;;
+        *)
+            print_error "未知子命令: $subcmd"
+            show_network_help
+            exit 1
+            ;;
+    esac
 }
-
-main "$@"
+main_network "$@"

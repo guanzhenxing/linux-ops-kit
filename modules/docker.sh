@@ -4,13 +4,13 @@ set -uo pipefail
 # linux-ops-kit — Day 2 操作：Docker 管理
 # ============================================================
 # 提供容器/镜像/Compose 的日常管理能力：
-#   - status:  容器状态总览（运行/停止/资源占用）
+#   - ps:      容器状态总览（运行/停止/资源占用）
 #   - logs:    选择容器，查看/跟踪日志
-#   - shell:   选择容器，进入 Shell
-#   - clean:   清理 Docker 资源（带确认）
+#   - exec:    选择容器，进入 Shell
+#   - prune:   清理 Docker 资源（带确认）
 #   - diagnose: Docker 健康检查（daemon/端口/重启/OOM）
 #   - compose: Compose 服务管理（状态/重启/重建）
-#   - images:  镜像空间分析
+#   - image:   镜像空间分析
 #
 # 无子命令运行 → 交互式菜单
 #
@@ -47,25 +47,25 @@ show_docker_help() {
 用法: ./ops.sh docker <子命令> [参数]
 
 子命令:
-  status (ps)    容器状态总览（运行/停止/资源占用）
+  ps             容器状态总览（运行/停止/资源占用）
   logs           选择容器，查看/跟踪日志
-  shell          选择容器，进入 Shell
-  clean          清理 Docker 资源（带确认）
+  exec           选择容器，进入 Shell
+  prune          清理 Docker 资源（带确认）
   diagnose       Docker 健康检查
   compose        Compose 服务管理
-  images         镜像空间分析
+  image          镜像空间分析
   help           显示此帮助
 
 无子命令运行进入交互式菜单。
 
 示例:
-  ./ops.sh docker status       # 查看所有容器状态
+  ./ops.sh docker ps           # 查看所有容器状态
   ./ops.sh docker logs         # 选择容器查看日志
-  ./ops.sh docker shell        # 选择容器进入 Shell
-  ./ops.sh docker clean        # 清理 Docker 资源
+  ./ops.sh docker exec         # 选择容器进入 Shell
+  ./ops.sh docker prune        # 清理 Docker 资源
   ./ops.sh docker diagnose     # Docker 健康检查
   ./ops.sh docker compose      # Compose 项目管理
-  ./ops.sh docker images       # 镜像空间分析
+  ./ops.sh docker image        # 镜像空间分析
 HELP
 }
 
@@ -249,9 +249,9 @@ do_docker_logs() {
     show_cmd "查看日志: $container" "docker logs -f --tail $lines '$container'"
 }
 
-# ==================== P0: 进入容器 Shell ====================
+# ==================== P0: 进入容器 (exec) ====================
 
-do_docker_shell() {
+do_docker_exec() {
     clear
     print_title "=== 进入容器 Shell ==="
 
@@ -275,9 +275,9 @@ do_docker_shell() {
     pause
 }
 
-# ==================== P0: 清理 Docker 资源 ====================
+# ==================== P0: 清理 Docker 资源 (prune) ====================
 
-do_docker_clean() {
+do_docker_prune() {
     clear
     print_title "=== Docker 资源清理 ==="
 
@@ -624,9 +624,9 @@ EOF
     done
 }
 
-# ==================== P2: 镜像分析 ====================
+# ==================== P2: 镜像分析 (image) ====================
 
-do_docker_images() {
+do_docker_image() {
     clear
     print_title "=== 镜像空间分析 ==="
 
@@ -707,11 +707,11 @@ docker_interactive_menu() {
         case $choice in
             1) do_docker_status ;;
             2) do_docker_logs ;;
-            3) do_docker_shell ;;
-            4) do_docker_clean ;;
+            3) do_docker_exec ;;
+            4) do_docker_prune ;;
             5) do_docker_diagnose ;;
             6) do_docker_compose ;;
-            7) do_docker_images ;;
+            7) do_docker_image ;;
             0) return 0 ;;
             *)
                 print_error "无效选择"
@@ -730,17 +730,17 @@ main_docker() {
     shift 2>/dev/null || true
 
     case "$subcmd" in
-        status|ps)
+        ps|status)
             do_docker_status
             ;;
         logs)
             do_docker_logs
             ;;
-        shell|exec)
-            do_docker_shell
+        exec|shell)
+            do_docker_exec
             ;;
-        clean|prune)
-            do_docker_clean
+        prune|clean)
+            do_docker_prune
             ;;
         diagnose|doctor|health)
             do_docker_diagnose
@@ -748,8 +748,8 @@ main_docker() {
         compose|dc)
             do_docker_compose
             ;;
-        images|image)
-            do_docker_images
+        image|images)
+            do_docker_image
             ;;
         help|--help|-h)
             show_docker_help

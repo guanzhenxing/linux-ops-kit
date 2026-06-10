@@ -182,7 +182,7 @@ linux-ops-kit v${VERSION} — Linux 运维工具箱
   init        初始化新服务器（交互模式: ./ops.sh init）
   user        用户管理（add/list/del）
   security    安全审计与状态检查（audit/status）
-  docker      Docker 管理（status/logs/shell/clean/diagnose/compose/images）
+  docker      Docker 管理（ps/logs/exec/prune/diagnose/compose/image）
 
 无参数运行进入交互式菜单。
 
@@ -191,7 +191,7 @@ linux-ops-kit v${VERSION} — Linux 运维工具箱
   ./ops.sh init -u jesen -k github:jesen -d  # 快速初始化
   ./ops.sh user add alice --ssh-key github:alice
   ./ops.sh security status
-  ./ops.sh docker status                     # 容器状态总览
+  ./ops.sh docker ps                         # 容器状态总览
   ./ops.sh docker logs                       # 选择容器查看日志
 HELPTEXT
 }

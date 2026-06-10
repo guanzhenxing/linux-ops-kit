@@ -99,7 +99,7 @@ echo "alias ops='/opt/linux-ops-kit/ops.sh'" >> ~/.bashrc && source ~/.bashrc
 ./ops.sh user list                   # 列出用户
 ./ops.sh security status             # 安全状态检查
 ./ops.sh security audit              # 完整安全审计
-./ops.sh docker status               # 容器状态总览
+./ops.sh docker ps                   # 容器状态总览
 ./ops.sh docker logs                 # 选择容器查看日志
 ./ops.sh docker diagnose             # Docker 健康检查
 ```
@@ -229,10 +229,10 @@ sudo ./ops.sh init --rollback
 ./ops.sh security audit     # 完整安全审计
 
 # Docker 管理
-./ops.sh docker status      # 容器状态总览
+./ops.sh docker ps          # 容器状态总览
 ./ops.sh docker logs        # 选择容器查看日志
-./ops.sh docker shell       # 进入容器 Shell
-./ops.sh docker clean       # 清理 Docker 资源
+./ops.sh docker exec        # 进入容器 Shell
+./ops.sh docker prune       # 清理 Docker 资源
 ./ops.sh docker diagnose    # Docker 健康检查
 ./ops.sh docker compose     # Compose 项目管理
 ```

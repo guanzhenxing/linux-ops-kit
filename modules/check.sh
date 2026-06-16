@@ -181,7 +181,7 @@ show_service_check() {
 
     if has_systemd; then
         # 使用 systemd
-        systemctl list-units --type=service --state=running --no-pager --plain 2>/dev/null | grep -v '^UNIT' | head -10 | while read -r line; do
+        while read -r line; do
             local service=$(echo "$line" | awk '{print $1}')
             local pid=$(systemctl show -p MainPID --value "$service" 2>/dev/null)
             pid=${pid:-0}
@@ -190,7 +190,7 @@ show_service_check() {
                 echo -e "  ${GREEN}✓${NC} $service (pid: $pid)"
                 services_found=1
             fi
-        done
+        done < <(systemctl list-units --type=service --state=running --no-pager --plain 2>/dev/null | grep -v '^UNIT' | head -10)
     else
         # 使用 service 命令
         for service in nginx apache2 mysql postgresql redis-server docker; do

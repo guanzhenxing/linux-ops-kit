@@ -132,7 +132,7 @@ show_command_detail_direct() {
 
     # 获取 MD 内容
     local md_url="${MD_BASE_URL}/${cmd}.md"
-    local md_content=$(curl -s "$md_url" 2>/dev/null)
+    local md_content=$(curl -s --connect-timeout 10 "$md_url" 2>/dev/null)
 
     if [ -z "$md_content" ]; then
         print_error "获取失败，请检查网络连接"
@@ -174,7 +174,7 @@ show_command_detail() {
 
     # 获取 MD 内容
     local md_url="${MD_BASE_URL}/${cmd}.md"
-    local md_content=$(curl -s "$md_url" 2>/dev/null)
+    local md_content=$(curl -s --connect-timeout 10 "$md_url" 2>/dev/null)
 
     if [ -z "$md_content" ]; then
         print_error "获取失败，请检查网络连接"

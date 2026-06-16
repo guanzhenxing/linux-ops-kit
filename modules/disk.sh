@@ -517,9 +517,4 @@ main_disk() {
     esac
 }
 
-无子命令运行进入交互式菜单。
-
-示例:
-  ./ops.sh disk usage
-  ./ops.sh disk find-large /var 10M
 main_disk "$@"

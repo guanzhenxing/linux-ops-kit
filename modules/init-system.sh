@@ -232,7 +232,9 @@ do_ntp() {
                     ;;
                 *)
                     # Debian: 优先 chrony
-                    if pkg_install --skip-missing "chrony" && systemctl start chrony 2>/dev/null; then
+                    pkg_install --skip-missing "chrony"
+                    if command -v chronyd &>/dev/null; then
+                        systemctl start chrony 2>/dev/null
                         svc_manage "chrony" enable
                         print_result ok "NTP" "chrony 已安装并启用"
                     else

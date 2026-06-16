@@ -607,8 +607,8 @@ do_rollback() {
 
     echo "$backups" | while IFS= read -r line; do
         local src dst
-        src=$(echo "$line" | grep -oP '(?<=BACKUP\] ).*(?= →)' 2>/dev/null || echo "$line" | sed 's/.*\] //' | sed 's/ →.*//')
-        dst=$(echo "$line" | grep -oP '(?<=→ ).*' 2>/dev/null || echo "")
+        src=$(echo "$line" | sed -n 's/.*BACKUP\] //; s/ â.*//p')
+        dst=$(echo "$line" | sed -n 's/.*â //p')
         if [ -f "$dst" ] && [ -n "$src" ]; then
             cp "$dst" "$src" 2>/dev/null && print_info "已恢复: $src"
         fi
@@ -677,11 +677,13 @@ main_init() {
         fi
     fi
 
-    # 执行前计划
-    print_execution_plan
-    if ! confirm_yes "是否继续？"; then
-        print_info "已取消初始化"
-        exit 0
+    # 执行前计划（--defaults 模式跳过确认）
+    if [ "$OPTS_DEFAULTS" != "yes" ]; then
+        print_execution_plan
+        if ! confirm_yes "是否继续？"; then
+            print_info "已取消初始化"
+            exit 0
+        fi
     fi
 
     # 执行初始化

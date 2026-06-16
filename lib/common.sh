@@ -162,8 +162,8 @@ get_cpu_usage() {
 # 格式: "used/total (percent%)"
 get_memory_usage() {
     local mem_info=$(free -h | grep Mem)
-    local total=$(echo $mem_info | awk '{print $2}')
-    local used=$(echo $mem_info | awk '{print $3}')
+    local total=$(echo "$mem_info" | awk '{print $2}')
+    local used=$(echo "$mem_info" | awk '{print $3}')
     local percent=$(free | grep Mem | awk '{printf "%.0f", ($3/$2)*100}')
     echo "${used}/${total} (${percent}%)"
 }
@@ -202,13 +202,6 @@ log_action() {
 error_exit() {
     print_error "$1"
     exit 1
-}
-
-# 设置严格模式
-set_strict_mode() {
-    set -e  # 遇到错误退出
-    set -u  # 使用未定义变量时报错
-    set -o pipefail  # 管道中任何错误都会导致整个管道失败
 }
 
 # ==================== 其他工具函数 ====================

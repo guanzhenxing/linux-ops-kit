@@ -62,6 +62,15 @@ preflight_check() {
         pass=false
     fi
 
+    # jq 依赖检查（状态文件读写依赖 jq；本工具的 help 模块也依赖它）
+    if command_exists "jq"; then
+        print_success "jq: $(jq --version 2>/dev/null)"
+    else
+        print_error "缺少 jq（init 状态文件读写依赖它）"
+        print_info  "建议: apt-get install -y jq 或 dnf install -y jq 后重试"
+        pass=false
+    fi
+
     # 包管理器锁检查
     if fuser /var/lib/dpkg/lock-frontend &>/dev/null 2>&1; then
         print_warn "apt 正被其他进程占用（可能正在自动更新）"
@@ -117,9 +126,9 @@ verify_ssh_access() {
 
     print_info "验证 SSH 登录: ${user}@${host}:${port} ..."
 
-    local key_opt=""
+    local key_opt=()
     if [ -n "$key_file" ] && [ -f "$key_file" ]; then
-        key_opt="-i $key_file"
+        key_opt=(-i "$key_file")
     fi
 
     if ssh \
@@ -127,7 +136,7 @@ verify_ssh_access() {
         -o ConnectTimeout=$timeout \
         -o BatchMode=yes \
         -o PasswordAuthentication=no \
-        $key_opt \
+        "${key_opt[@]}" \
         -p "$port" \
         "${user}@${host}" "echo 'SSH_VERIFY_OK'" 2>/dev/null | grep -q "SSH_VERIFY_OK"; then
         print_success "SSH 连接验证成功 — 后路确认通畅"
@@ -228,10 +237,16 @@ write_init_state() {
 STATEFILE
     else
         # 更新 steps 字段中的某个步骤
-        if grep -q "\"$step_name\"" "$INIT_STATE_FILE" 2>/dev/null; then
-            sed -i "s/\"$step_name\": \"[^\"]*\"/\"$step_name\": \"$step_status\"/" "$INIT_STATE_FILE"
+        # 用 jq 原子写入，避免 sed 正则在值含特殊字符（/ " & 等）时破坏 JSON 结构
+        local tmp
+        tmp=$(mktemp)
+        if jq --arg k "$step_name" --arg v "$step_status" \
+              '.steps[$k] = $v' "$INIT_STATE_FILE" > "$tmp" 2>/dev/null; then
+            mv "$tmp" "$INIT_STATE_FILE"
         else
-            sed -i "s/\"steps\": {/\"steps\": {\n    \"$step_name\": \"$step_status\",/" "$INIT_STATE_FILE"
+            rm -f "$tmp"
+            log_init_step "FAIL" "状态文件更新失败（jq 解析失败）：$step_name"
+            return 1
         fi
     fi
 
@@ -257,8 +272,12 @@ is_initialized() {
 show_init_status() {
     if is_initialized; then
         local init_time
-        init_time=$(grep "initialized_at" "$INIT_STATE_FILE" 2>/dev/null | sed 's/.*"\(.*\)".*/\1/')
-        print_info "服务器已于 ${init_time} 完成初始化"
+        init_time=$(jq -r '.initialized_at // empty' "$INIT_STATE_FILE" 2>/dev/null)
+        if [ -n "$init_time" ]; then
+            print_info "服务器已于 ${init_time} 完成初始化"
+        else
+            print_warn "状态文件存在但格式异常: $INIT_STATE_FILE"
+        fi
     else
         print_info "初始化状态: 首次运行"
     fi
@@ -275,7 +294,7 @@ check_idempotent() {
     local desc="$2"
 
     if is_initialized; then
-        if grep -q "\"$key\": \"ok\"" "$INIT_STATE_FILE" 2>/dev/null; then
+        if jq -e --arg k "$key" '.steps[$k] == "ok"' "$INIT_STATE_FILE" &>/dev/null; then
             print_result skip "$desc" "已存在，跳过"
             return 0
         fi

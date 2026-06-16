@@ -123,7 +123,7 @@ pkg_refresh_cache() {
         get_pkg_manager
         print_info "刷新包管理器缓存..."
         if [ -n "$PKG_CACHE_CMD" ]; then
-            eval "$PKG_CACHE_CMD" 2>&1 | while IFS= read -r line; do :; done
+            eval "$PKG_CACHE_CMD" 2>&1 | while IFS= read -r _; do :; done
         fi
         echo "$now" > "$PKG_CACHE_TIMESTAMP"
     fi

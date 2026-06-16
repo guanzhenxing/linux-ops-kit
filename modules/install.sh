@@ -183,7 +183,7 @@ REPO
             postgresql) verify_cmd="psql --version" ;;
             mongodb) verify_cmd="mongod --version" ;;
         esac
-        echo -e "  版本: ${CYAN}$(eval $verify_cmd 2>&1 | head -1)${NC}"
+        echo -e "  版本: ${CYAN}$(eval "$verify_cmd" 2>&1 | head -1)${NC}"
         log_action "安装了 $sw"
     else
         print_error "$sw 安装失败"

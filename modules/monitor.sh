@@ -63,10 +63,10 @@ realtime_dashboard() {
         echo ""
         echo -e "${BOLD}[内存]${NC}"
         local mem_info=$(free | grep Mem)
-        local mem_total=$(echo $mem_info | awk '{printf "%.0f", $2/1024}')
-        local mem_used=$(echo $mem_info | awk '{printf "%.0f", $3/1024}')
-        local mem_percent=$(echo $mem_info | awk '{printf "%.0f", ($3/$2)*100}')
-        local mem_avail=$(echo $mem_info | awk '{printf "%.0f", $7/1024}')
+        local mem_total=$(echo "$mem_info" | awk '{printf "%.0f", $2/1024}')
+        local mem_used=$(echo "$mem_info" | awk '{printf "%.0f", $3/1024}')
+        local mem_percent=$(echo "$mem_info" | awk '{printf "%.0f", ($3/$2)*100}')
+        local mem_avail=$(echo "$mem_info" | awk '{printf "%.0f", $7/1024}')
 
         local mem_color="$GREEN"
         if (( $(echo "$mem_percent >= $MEM_CRIT" | bc -l 2>/dev/null || echo 0) )); then
@@ -87,11 +87,11 @@ realtime_dashboard() {
 
         # Swap
         local swap_info=$(free | grep Swap)
-        local swap_total=$(echo $swap_info | awk '{print $2}')
+        local swap_total=$(echo "$swap_info" | awk '{print $2}')
         if [ "$swap_total" -gt 0 ]; then
-            local swap_used=$(echo $swap_info | awk '{printf "%.0f", $3/1024}')
-            local swap_total_mb=$(echo $swap_info | awk '{printf "%.0f", $2/1024}')
-            local swap_percent=$(echo $swap_info | awk '{printf "%.0f", ($3/$2)*100}')
+            local swap_used=$(echo "$swap_info" | awk '{printf "%.0f", $3/1024}')
+            local swap_total_mb=$(echo "$swap_info" | awk '{printf "%.0f", $2/1024}')
+            local swap_percent=$(echo "$swap_info" | awk '{printf "%.0f", ($3/$2)*100}')
             echo -e "  Swap: ${swap_used}MB / ${swap_total_mb}MB (${swap_percent}%)"
         fi
 

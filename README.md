@@ -74,7 +74,7 @@ echo "alias ops='/opt/linux-ops-kit/ops.sh'" >> ~/.bashrc && source ~/.bashrc
 ## 主菜单
 
 ```
-=== Linux 运维工具箱 v2.3.0 ===
+=== Linux 运维工具箱 v2.4.0 ===
 
  0. 服务器初始化  - 🆕 新服务器一条命令从 0 到可用
  1. 系统检查      - CPU/内存/磁盘/服务健康检查
@@ -335,6 +335,7 @@ check_idempotent "step" "desc"  # 幂等检测
 
 ## 版本
 
+- **v2.4.0** — 🛠 工程化与健壮性改进：shellcheck 门禁（severity=warning 零警告）、bats 单元测试基线（30 用例）、init-helper 状态文件改用 jq 原子读写、GitHub Actions CI、修复 sudoers 重复写入的幂等 bug
 - **v2.3.0** — 🆕 新增 Docker 管理模块（status/logs/shell/clean/diagnose/compose/images）
 - **v2.1.0** — 🆕 新增 init 模块（服务器一键初始化）+ Day 2 操作（user/security）
 - **v2.0.0** — 全部 8 个模块实现完成

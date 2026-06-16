@@ -102,9 +102,9 @@ show_memory_check() {
 
     # 获取内存信息
     local mem_info=$(free -h | grep Mem)
-    local mem_total=$(echo $mem_info | awk '{print $2}')
-    local mem_used=$(echo $mem_info | awk '{print $3}')
-    local mem_avail=$(echo $mem_info | awk '{print $7}')
+    local mem_total=$(echo "$mem_info" | awk '{print $2}')
+    local mem_used=$(echo "$mem_info" | awk '{print $3}')
+    local mem_avail=$(echo "$mem_info" | awk '{print $7}')
 
     # 计算使用率
     local mem_percent=$(free | grep Mem | awk '{printf "%.0f", ($3/$2)*100}')
@@ -120,8 +120,8 @@ show_memory_check() {
 
     # 交换分区
     local swap_info=$(free -h | grep Swap)
-    local swap_total=$(echo $swap_info | awk '{print $2}')
-    local swap_used=$(echo $swap_info | awk '{print $3}')
+    local swap_total=$(echo "$swap_info" | awk '{print $2}')
+    local swap_used=$(echo "$swap_info" | awk '{print $3}')
     local swap_percent=$(free | grep Swap | awk '{if($2>0) printf "%.0f", ($3/$2)*100; else print "0"}')
 
     echo ""
@@ -288,7 +288,7 @@ show_all_check() {
     while read -r line; do
         local usage=$(echo "$line" | awk '{print $5}' | tr -d '%')
         if [ "$usage" -ge 90 ]; then
-            echo -e "  ${RED}⚠️${NC} 磁盘 $(echo $line | awk '{print $1}') 使用率 ${usage}%"
+            echo -e "  ${RED}⚠️${NC} 磁盘 $(echo "$line" | awk '{print $1}') 使用率 ${usage}%"
             issues=$((issues + 1))
         fi
     done < <(df -h | grep -vE '^Filesystem|tmpfs|cdrom|udev')

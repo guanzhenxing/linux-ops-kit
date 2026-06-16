@@ -1,0 +1,54 @@
+# linux-ops-kit — 工程化质量门禁
+# 触发：push / PR 到 main 与任意分支
+# 两个 job：
+#   shellcheck —— 全量扫描所有 .sh，severity=warning 阻断（warning 以下不阻断）
+#   test      —— 安装 bats-core，跑 tests/（Ubuntu 上 Linux-only 用例天然可跑）
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  shellcheck:
+    name: ShellCheck (severity=warning)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: |
+          scversion="stable"
+          wget -qO- "https://github.com/koalaman/shellcheck/releases/download/${scversion}/shellcheck-${scversion}.linux.x86_64.tar.xz" | tar -xJ
+          sudo install -m 0755 "shellcheck-${scversion}/shellcheck" /usr/local/bin/shellcheck
+          shellcheck --version
+
+      - name: Run shellcheck (reads .shellcheckrc disables)
+        # .shellcheckrc 位于仓库根，自动生效：disable=SC2155,SC1090,SC1091; external-sources=true
+        # git ls-files -z | xargs -0 兼容 bash 3.2+，且能正确处理含空格的路径
+        run: |
+          set -e
+          echo "Scanning tracked .sh scripts:"
+          git ls-files '*.sh' | sed 's/^/  /'
+          git ls-files '*.sh' -z | xargs -0 shellcheck --severity=warning --external-sources
+
+  test:
+    name: bats unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install bats-core
+        run: |
+          git clone --depth 1 https://github.com/bats-core/bats-core.git /tmp/bats-core
+          sudo /tmp/bats-core/install.sh /usr/local
+          bats --version
+
+      # jq 已预装于 ubuntu-latest（init-helper 测试依赖）
+      - name: Verify jq present
+        run: jq --version
+
+      - name: Run bats
+        run: bats --recursive tests/

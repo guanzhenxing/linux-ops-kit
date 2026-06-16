@@ -56,7 +56,7 @@ EOF
             find "$search_dir" -xdev -type f -size "+$min_size" -exec ls -lh {} \; 2>/dev/null | \
                 awk '{print $5, $9}' | sort -rh | head -20
 
-            if [ ${PIPESTATUS[0]} -ne 0 ]; then
+            if [ "${PIPESTATUS[0]}" -ne 0 ]; then
                 print_warn "可能需要 root 权限才能访问某些目录"
             fi
             echo ""

@@ -28,7 +28,7 @@ source "${SCRIPT_DIR}/lib/common.sh"
 source "${SCRIPT_DIR}/lib/os-detect.sh"
 
 # 版本信息
-VERSION="2.3.0"
+VERSION="2.4.0"
 
 # ==================== 主菜单 ====================
 
@@ -86,7 +86,7 @@ dispatch_subcommand() {
         user)        run_module "user" "$@" ;;
         security)    run_module "security-audit" "$@" ;;
         docker)      run_module "docker" "$@" ;;
-        help|--help|-h)
+        --help|-h)
             show_subcommand_help
             ;;
         version|--version|-v)

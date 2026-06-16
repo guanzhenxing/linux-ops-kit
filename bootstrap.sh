@@ -49,7 +49,6 @@ preflight() {
     # shellcheck disable=SC1091
     source /etc/os-release
     OS_ID="${ID:-unknown}"
-    OS_VERSION="${VERSION_ID:-unknown}"
     OS_PRETTY="${PRETTY_NAME:-Linux}"
 
     info "系统: ${OS_PRETTY}"

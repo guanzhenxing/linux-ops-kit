@@ -55,16 +55,25 @@ do_create_user() {
         "$create_cmd && passwd -d '$username' && usermod -aG '$sudo_group' '$username'" || return 1
 
     # 验证 sudo 组是否在 sudoers 中启用
+    local sudoers_fragment="/etc/sudoers.d/99-ops-init"
+    local rule=""
     if [ "$sudo_group" = "sudo" ]; then
         if ! grep -qE "^%sudo\s+ALL" /etc/sudoers 2>/dev/null; then
-            echo "%sudo ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers.d/99-ops-init
+            rule="%sudo ALL=(ALL:ALL) NOPASSWD:ALL"
         fi
     elif [ "$sudo_group" = "wheel" ]; then
         if grep -qE "^#\s*%wheel" /etc/sudoers 2>/dev/null; then
-            echo "%wheel ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers.d/99-ops-init
+            rule="%wheel ALL=(ALL:ALL) NOPASSWD:ALL"
         fi
     fi
-    chmod 440 /etc/sudoers.d/99-ops-init 2>/dev/null || true
+
+    # 幂等写入：仅当片段文件尚未包含该规则时才追加（避免重复 init 累积重复行）
+    if [ -n "$rule" ]; then
+        if [ ! -f "$sudoers_fragment" ] || ! grep -qxF "$rule" "$sudoers_fragment" 2>/dev/null; then
+            echo "$rule" >> "$sudoers_fragment"
+        fi
+    fi
+    chmod 440 "$sudoers_fragment" 2>/dev/null || true
 
     print_result ok "创建用户" "$username (sudo 权限)"
     log_init_step "OK" "用户 $username 创建完成"

@@ -1,0 +1,11 @@
+# shellcheck 配置 — linux-ops-kit
+# 详见 .github/workflows/lint.yml；CI 以 --severity=warning 运行
+
+# SC2155: local x=$(cmd) 会掩盖子命令返回码。本项目约 109 处，多数为无害的
+#         文本处理（如 local total=$(echo ...)）。经评估不在本次全量改写范围，
+#         降级忽略；真正影响健壮性的返回码问题已单独处理。
+# SC1090/SC1091: source 的路径是运行时变量（${SCRIPT_DIR}/lib/...），shellcheck
+#                无法静态跟踪，属纯噪音而非 bug。
+disable=SC2155,SC1090,SC1091
+
+external-sources=true

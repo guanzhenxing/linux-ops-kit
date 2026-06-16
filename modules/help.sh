@@ -73,7 +73,7 @@ search_command() {
         "\(.key)\t\(.value.d)"
     ' "$DATA_FILE" 2>/dev/null | head -20 | column -t -s $'\t'
 
-    if [ $(jq -r --arg kw "$keyword" 'to_entries[] | select(.key | contains($kw))' "$DATA_FILE" 2>/dev/null | wc -l) -eq 0 ]; then
+    if [ "$(jq -r --arg kw "$keyword" 'to_entries[] | select(.key | contains($kw))' "$DATA_FILE" 2>/dev/null | wc -l)" -eq 0 ]; then
         print_warn "未找到匹配的命令"
         echo ""
         pause

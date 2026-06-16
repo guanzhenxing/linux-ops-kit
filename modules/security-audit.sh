@@ -141,12 +141,10 @@ do_security_status() {
     print_title "安全状态摘要"
 
     # SSH 加固
-    local ssh_ok=true
     if sshd -T 2>/dev/null | grep -q "permitrootlogin no"; then
         echo -e "SSH 加固:   ${GREEN}✓ 正常${NC}"
     else
         echo -e "SSH 加固:   ${YELLOW}⚠ 未加固${NC}"
-        ssh_ok=false
     fi
 
     # 防火墙

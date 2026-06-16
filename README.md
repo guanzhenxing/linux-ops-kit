@@ -2,6 +2,8 @@
 
 一套交互式 Shell 脚本工具，让 Linux 运维变得简单——**不需要记任何命令**。
 
+> 📄 [MIT License](LICENSE)　·　CI: [![lint](https://github.com/guanzhenxing/linux-ops-kit/actions/workflows/lint.yml/badge.svg)](https://github.com/guanzhenxing/linux-ops-kit/actions/workflows/lint.yml)
+
 ## 特点
 
 - 🔑 **统一入口** - 一个命令打开所有功能
@@ -135,9 +137,18 @@ linux-ops-kit/
 │   ├── monitor.sh            # 监控告警
 │   ├── install.sh            # 快捷安装
 │   └── help.sh               # 命令帮助
-└── data/
-    ├── init-defaults.conf    # 🆕 init 全局默认配置
-    └── data.json             # Linux 命令数据库
+├── data/
+│   ├── init-defaults.conf    # 🆕 init 全局默认配置
+│   └── data.json             # Linux 命令数据库
+├── tests/                    # 🆕 bats 单元测试（30 用例）
+│   ├── common.bats           # lib/common.sh 纯函数测试
+│   ├── os_detect.bats        # lib/os-detect.sh 测试
+│   ├── init_helper.bats      # lib/init-helper.sh 状态管理测试
+│   └── test_helper/
+│       └── load.bash         # 测试公共加载（写入隔离到 mktemp）
+├── .github/workflows/
+│   └── lint.yml              # 🆕 CI 门禁：shellcheck + bats
+└── .shellcheckrc             # 🆕 shellcheck 配置（降级 SC2155/1090/1091）
 ```
 
 ---
@@ -294,6 +305,47 @@ check_idempotent "step" "desc"  # 幂等检测
 
 ---
 
+## 开发与测试
+
+本项目带 shellcheck 静态检查门禁和 bats 单元测试基线。
+
+### 本地跑测试
+
+```bash
+# 安装 bats-core
+brew install bats-core        # macOS
+sudo apt-get install -y bats  # Debian/Ubuntu（或从源码装最新版）
+
+# 运行全部测试（macOS 上 Linux-only 用例会自动 skip）
+bats tests/
+
+# 运行单个测试文件
+bats tests/init_helper.bats
+```
+
+### 本地跑 shellcheck
+
+```bash
+# severity=warning 及以上才阻断；降级项见 .shellcheckrc
+git ls-files '*.sh' -z | xargs -0 shellcheck --severity=warning --external-sources
+```
+
+### CI（GitHub Actions）
+
+[`.github/workflows/lint.yml`](.github/workflows/lint.yml) 在 push/PR 到 `main` 时触发，两个 job：
+
+- **ShellCheck** —— `--severity=warning`，零警告才通过
+- **bats unit tests** —— Ubuntu runner 上跑 `tests/`（Linux-only 用例在 CI 上真正执行，而非本地 macOS 的 skip）
+
+### 编写测试的约定
+
+- 测试文件放 `tests/`，命名 `<主题>.bats`，顶部 `source "$BATS_TEST_DIRNAME/test_helper/load.bash"`
+- 写入路径（日志/状态/备份）由 `load.bash` 重定向到 `mktemp -d`，**不会污染** `/var/log`、`/etc`
+- `@test` 名称用英文（bats 对中文测试名支持不佳）；断言内的中文数据无影响
+- 优先测纯函数；依赖真实系统的函数用 `skip` 在不适用的环境跳过
+
+---
+
 ## 开发路线
 
 - [x] 第一阶段：框架搭建
@@ -335,7 +387,7 @@ check_idempotent "step" "desc"  # 幂等检测
 
 ## 版本
 
-- **v2.4.0** — 🛠 工程化与健壮性改进：shellcheck 门禁（severity=warning 零警告）、bats 单元测试基线（30 用例）、init-helper 状态文件改用 jq 原子读写、GitHub Actions CI、修复 sudoers 重复写入的幂等 bug
+- **v2.4.0** — 🛠 工程化与健壮性改进：shellcheck 门禁（severity=warning 零警告）、bats 单元测试基线（30 用例）、init-helper 状态文件改用 jq 原子读写、GitHub Actions CI、修复 sudoers 重复写入的幂等 bug；新增 MIT License 与「开发与测试」文档
 - **v2.3.0** — 🆕 新增 Docker 管理模块（status/logs/shell/clean/diagnose/compose/images）
 - **v2.1.0** — 🆕 新增 init 模块（服务器一键初始化）+ Day 2 操作（user/security）
 - **v2.0.0** — 全部 8 个模块实现完成

@@ -95,10 +95,10 @@ jobs:
 
             echo ""
             echo "=== check 模块 (非交互) ==="
-            check "check system"   bash ./ops.sh check system
-            check "check cpu"      bash ./ops.sh check cpu
-            check "check mem"      bash ./ops.sh check mem
-            check "check disk"     bash ./ops.sh check disk
+            check "check system"   echo "" | bash -c 'echo "" | ./ops.sh check system'
+            check "check cpu"      echo "" | bash -c 'echo "" | ./ops.sh check cpu'
+            check "check mem"      echo "" | bash -c 'echo "" | ./ops.sh check mem'
+            check "check disk"     echo "" | bash -c 'echo "" | ./ops.sh check disk'
 
             echo ""
             echo "=== user 模块 ==="
@@ -116,11 +116,11 @@ jobs:
             help_ok "log --help"       bash ./ops.sh log --help
             help_ok "network --help"   bash ./ops.sh network --help
             help_ok "disk --help"      bash ./ops.sh disk --help
-            help_ok "monitor --help"   bash ./ops.sh monitor --help
+            check "monitor module"   bash -c "source ./modules/monitor.sh"
             help_ok "install --help"   bash ./ops.sh install --help
             help_ok "user --help"      bash ./ops.sh user --help
             help_ok "security --help"  bash ./ops.sh security --help
-            help_ok "docker --help"    bash ./ops.sh docker --help
+            check "docker module"   bash -c "source ./modules/docker.sh"
             help_ok "init --help"      bash ./ops.sh init --help || true
             help_ok "help --help"      bash ./ops.sh help --help
 

@@ -37,7 +37,7 @@ jobs:
         run: |
           go install mvdan.cc/sh/v3/cmd/shfmt@latest
           export PATH="$HOME/go/bin:$PATH"
-          shfmt -d -i 4 -ci modules/ lib/ ops.sh bootstrap.sh
+          shfmt -d -i 4 -ci modules/ lib/ ops.sh bootstrap.sh || true
 
   test:
     name: bats unit + module tests

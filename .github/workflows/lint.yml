@@ -95,10 +95,10 @@ jobs:
 
             echo ""
             echo "=== check 模块 (非交互) ==="
-            check "check system"   echo "" | bash -c 'echo "" | ./ops.sh check system'
-            check "check cpu"      echo "" | bash -c 'echo "" | ./ops.sh check cpu'
-            check "check mem"      echo "" | bash -c 'echo "" | ./ops.sh check mem'
-            check "check disk"     echo "" | bash -c 'echo "" | ./ops.sh check disk'
+            check "check system"   echo "" | sh -c "echo | bash ./ops.sh check system"
+            check "check cpu"      echo "" | sh -c "echo | bash ./ops.sh check cpu"
+            check "check mem"      echo "" | sh -c "echo | bash ./ops.sh check mem"
+            check "check disk"     echo "" | sh -c "echo | bash ./ops.sh check disk"
 
             echo ""
             echo "=== user 模块 ==="

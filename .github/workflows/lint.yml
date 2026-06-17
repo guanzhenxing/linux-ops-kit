@@ -1,8 +1,9 @@
 # linux-ops-kit — 工程化质量门禁
 # 触发：push / PR 到 main 与任意分支
-# 两个 job：
-#   shellcheck —— 全量扫描所有 .sh，severity=warning 阻断（warning 以下不阻断）
-#   test      —— 安装 bats-core，跑 tests/（Ubuntu 上 Linux-only 用例天然可跑）
+# 三个 job：
+#   shellcheck  —— 全量扫描所有 .sh，severity=warning 阻断
+#   test        —— bats 单元测试 + 模块解析测试
+#   integration —— Docker 容器中跑 init --dry-run 烟雾测试（4 个发行版矩阵）
 name: lint
 
 on:
@@ -26,8 +27,6 @@ jobs:
           shellcheck --version
 
       - name: Run shellcheck (reads .shellcheckrc disables)
-        # .shellcheckrc 位于仓库根，自动生效：disable=SC2155,SC1090,SC1091; external-sources=true
-        # git ls-files -z | xargs -0 兼容 bash 3.2+，且能正确处理含空格的路径
         run: |
           set -e
           echo "Scanning tracked .sh scripts:"
@@ -35,7 +34,7 @@ jobs:
           git ls-files '*.sh' -z | xargs -0 shellcheck --severity=warning --external-sources
 
   test:
-    name: bats unit tests
+    name: bats unit + module tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,9 +45,48 @@ jobs:
           sudo /tmp/bats-core/install.sh /usr/local
           bats --version
 
-      # jq 已预装于 ubuntu-latest（init-helper 测试依赖）
       - name: Verify jq present
         run: jq --version
 
       - name: Run bats
         run: bats --recursive tests/
+
+  integration:
+    name: init smoke test (${{ matrix.image }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: [ubuntu:22.04, ubuntu:24.04, debian:12, almalinux:9]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Smoke test init --dry-run
+        run: |
+          docker run --rm -v "$PWD:/ops-kit:ro" "${{ matrix.image }}" sh -c '
+            set -e
+            # RHEL 系镜像默认不带 bash，统一安装
+            if command -v dnf >/dev/null 2>&1; then
+              dnf install -y bash >/dev/null 2>&1
+            fi
+            echo "=== 发行版信息 ==="
+            cat /etc/os-release | head -5
+
+            echo ""
+            echo "=== TEST 1: ops.sh 入口加载 ==="
+            cd /ops-kit
+            bash ops.sh version 2>&1
+
+            echo ""
+            echo "=== TEST 2: init --dry-run 计划输出 ==="
+            bash ops.sh init --defaults -u testuser -k github:testuser --docker --harden-ssh --firewall --dry-run 2>&1
+
+            echo ""
+            echo "=== TEST 3: init --help ==="
+            bash ops.sh init --help 2>&1
+
+            echo ""
+            echo "=== TEST 4: security status ==="
+            bash ops.sh security status 2>&1
+          '
+          echo "✓ ${{ matrix.image }} 烟雾测试通过"

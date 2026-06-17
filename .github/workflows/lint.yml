@@ -73,19 +73,19 @@ jobs:
 
             pass=0; fail=0
             check() {
-              local label="\$1"; shift
-              if "\$@" >/dev/null 2>&1; then
-                ((pass++)); echo "  PASS  \$label"
+              local label="$1"; shift
+              if "$@" >/dev/null 2>&1; then
+                ((pass++)); echo "  PASS  $label"
               else
-                ((fail++)); echo "  FAIL  \$label — exit \$?"
+                ((fail++)); echo "  FAIL  $label — exit $?"
               fi
             }
             help_ok() {
-              local label="\$1"; shift
-              if "\$@" 2>&1 | head -5 | grep -qi "用法\|usage\|help\|USAGE"; then
-                ((pass++)); echo "  PASS  \$label (help)"
+              local label="$1"; shift
+              if "$@" 2>&1 | head -5 | grep -qi "用法\|usage\|help\|USAGE"; then
+                ((pass++)); echo "  PASS  $label (help)"
               else
-                ((fail++)); echo "  FAIL  \$label (help missing)"
+                ((fail++)); echo "  FAIL  $label (help missing)"
               fi
             }
 

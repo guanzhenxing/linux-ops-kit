@@ -44,12 +44,15 @@ preflight_check() {
             print_success "内存: ${mem}MB 总量, ${mem_avail}MB 可用"
         fi
     fi
-
     # 网络检查
-    if ping -c 1 -W 3 8.8.8.8 &>/dev/null; then
+    # ICMP 可能被某些环境阻断（如 GitHub Actions），
+    # 回退到 HTTP 连通性检查
+    if ping -c 1 -W 3 8.8.8.8 &>/dev/null || \
+       curl -s --connect-timeout 5 https://github.com >/dev/null 2>&1 || \
+       wget -q --timeout=5 -O /dev/null https://github.com 2>/dev/null; then
         print_success "网络: 可访问外网"
     else
-        print_error "无法访问外网 (ping 8.8.8.8 失败)"
+        print_error "无法访问外网 (ping 和 HTTP 均失败)"
         print_info  "建议: 检查网络配置和 DNS 设置"
         pass=false
     fi

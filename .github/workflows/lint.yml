@@ -90,38 +90,38 @@ jobs:
             }
 
             echo "=== 入口加载 ==="
-            check "version"        ./ops.sh version
+            check "version"        bash ./ops.sh version
 
             echo ""
             echo "=== check 模块 (非交互) ==="
-            check "check system"   ./ops.sh check system
-            check "check cpu"      ./ops.sh check cpu
-            check "check mem"      ./ops.sh check mem
-            check "check disk"     ./ops.sh check disk
+            check "check system"   bash ./ops.sh check system
+            check "check cpu"      bash ./ops.sh check cpu
+            check "check mem"      bash ./ops.sh check mem
+            check "check disk"     bash ./ops.sh check disk
 
             echo ""
             echo "=== user 模块 ==="
-            check "user list"      ./ops.sh user list
+            check "user list"      bash ./ops.sh user list
 
             echo ""
             echo "=== security 模块 (只读) ==="
-            check "security status"  ./ops.sh security status
-            check "security audit"   ./ops.sh security audit
+            check "security status"  bash ./ops.sh security status
+            check "security audit"   bash ./ops.sh security audit
 
             echo ""
             echo "=== 各模块帮助输出 ==="
-            help_ok "check --help"     ./ops.sh check --help
-            help_ok "service --help"   ./ops.sh service --help
-            help_ok "log --help"       ./ops.sh log --help
-            help_ok "network --help"   ./ops.sh network --help
-            help_ok "disk --help"      ./ops.sh disk --help
-            help_ok "monitor --help"   ./ops.sh monitor --help
-            help_ok "install --help"   ./ops.sh install --help
-            help_ok "user --help"      ./ops.sh user --help
-            help_ok "security --help"  ./ops.sh security --help
-            help_ok "docker --help"    ./ops.sh docker --help
-            help_ok "init --help"      ./ops.sh init --help || true
-            help_ok "help --help"      ./ops.sh help --help
+            help_ok "check --help"     bash ./ops.sh check --help
+            help_ok "service --help"   bash ./ops.sh service --help
+            help_ok "log --help"       bash ./ops.sh log --help
+            help_ok "network --help"   bash ./ops.sh network --help
+            help_ok "disk --help"      bash ./ops.sh disk --help
+            help_ok "monitor --help"   bash ./ops.sh monitor --help
+            help_ok "install --help"   bash ./ops.sh install --help
+            help_ok "user --help"      bash ./ops.sh user --help
+            help_ok "security --help"  bash ./ops.sh security --help
+            help_ok "docker --help"    bash ./ops.sh docker --help
+            help_ok "init --help"      bash ./ops.sh init --help || true
+            help_ok "help --help"      bash ./ops.sh help --help
 
             echo ""
             echo "=== help 模块 ==="
@@ -194,7 +194,7 @@ jobs:
             echo ""
             echo "=== 执行 init ==="
             # --defaults 跳过交互，--skip-upgrade 跳过耗时的系统更新
-            ./ops.sh init --defaults -u testuser --skip-upgrade 2>&1 || {
+            bash ./ops.sh init --defaults -u testuser --skip-upgrade 2>&1 || {
               echo "init 返回非零退出码: $?"
               # 非 systemd 环境部分步骤会失败（如 systemctl），
               # 但整体流程应完成核心步骤

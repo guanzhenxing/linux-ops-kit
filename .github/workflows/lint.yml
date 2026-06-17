@@ -67,17 +67,18 @@ jobs:
       - name: Test every module (non-interactive paths)
         run: |
           docker run --rm -v "$PWD:/ops-kit:ro" ubuntu:22.04 bash -c '
-            set -e
             apt-get update -qq && apt-get install -y -qq jq procps iproute2 >/dev/null 2>&1
             cd /ops-kit
 
             pass=0; fail=0
             check() {
               local label="$1"; shift
-              if "$@" >/dev/null 2>&1; then
+              local out; out=$("$@" 2>&1); local rc=$?
+              if [ "$rc" -eq 0 ]; then
                 ((pass++)); echo "  PASS  $label"
               else
-                ((fail++)); echo "  FAIL  $label — exit $?"
+                ((fail++)); echo "  FAIL  $label — exit $rc"
+                echo "$out" | while IFS= read -r l; do echo "    | $l"; done
               fi
             }
             help_ok() {

@@ -57,6 +57,81 @@ jobs:
       - name: Run bats
         run: bats --recursive tests/
 
+  module-tests:
+    name: all module smoke tests
+    runs-on: ubuntu-latest
+    needs: [shellcheck]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test every module (non-interactive paths)
+        run: |
+          docker run --rm -v "$PWD:/ops-kit:ro" ubuntu:22.04 bash -c '
+            set -e
+            apt-get update -qq && apt-get install -y -qq jq procps iproute2 >/dev/null 2>&1
+            cd /ops-kit
+
+            pass=0; fail=0
+            check() {
+              local label="\$1"; shift
+              if "\$@" >/dev/null 2>&1; then
+                ((pass++)); echo "  PASS  \$label"
+              else
+                ((fail++)); echo "  FAIL  \$label — exit \$?"
+              fi
+            }
+            help_ok() {
+              local label="\$1"; shift
+              if "\$@" 2>&1 | head -5 | grep -qi "用法\|usage\|help\|USAGE"; then
+                ((pass++)); echo "  PASS  \$label (help)"
+              else
+                ((fail++)); echo "  FAIL  \$label (help missing)"
+              fi
+            }
+
+            echo "=== 入口加载 ==="
+            check "version"        ops.sh version
+
+            echo ""
+            echo "=== check 模块 (非交互) ==="
+            check "check system"   ops.sh check system
+            check "check cpu"      ops.sh check cpu
+            check "check mem"      ops.sh check mem
+            check "check disk"     ops.sh check disk
+
+            echo ""
+            echo "=== user 模块 ==="
+            check "user list"      ops.sh user list
+
+            echo ""
+            echo "=== security 模块 (只读) ==="
+            check "security status"  ops.sh security status
+            check "security audit"   ops.sh security audit
+
+            echo ""
+            echo "=== 各模块帮助输出 ==="
+            help_ok "check --help"     ops.sh check --help
+            help_ok "service --help"   ops.sh service --help
+            help_ok "log --help"       ops.sh log --help
+            help_ok "network --help"   ops.sh network --help
+            help_ok "disk --help"      ops.sh disk --help
+            help_ok "monitor --help"   ops.sh monitor --help
+            help_ok "install --help"   ops.sh install --help
+            help_ok "user --help"      ops.sh user --help
+            help_ok "security --help"  ops.sh security --help
+            help_ok "docker --help"    ops.sh docker --help
+            help_ok "init --help"      ops.sh init --help || true
+            help_ok "help --help"      ops.sh help --help
+
+            echo ""
+            echo "=== help 模块 ==="
+            [ -f data/data.json ] && { ((pass++)); echo "  PASS  data.json"; } || { ((fail++)); echo "  FAIL  data.json missing"; }
+
+            echo ""
+            echo "=== 结果: \$pass 通过 / \$fail 失败 ==="
+            [ "\$fail" -eq 0 ]
+          '
+
   integration:
     name: init smoke test (${{ matrix.image }})
     runs-on: ubuntu-latest

@@ -28,8 +28,8 @@ source "${SCRIPT_DIR}/lib/common.sh"
 source "${SCRIPT_DIR}/lib/os-detect.sh"
 
 # 版本信息
+source "${SCRIPT_DIR}/lib/version.sh"
 VERSION="2.4.0"
-
 # ==================== 主菜单 ====================
 
 show_main_menu() {

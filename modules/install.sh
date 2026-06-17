@@ -4,6 +4,9 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/../lib/common.sh"
+source "${SCRIPT_DIR}/../lib/os-detect.sh"
+source "${SCRIPT_DIR}/../lib/init-helper.sh"
+source "${SCRIPT_DIR}/modules/init-software.sh"
 
 # ==================== 常用软件安装 ====================
 
@@ -89,19 +92,8 @@ install_single() {
             fi
             ;;
         docker)
-            if confirm_yes "是否使用官方脚本安装 Docker?"; then
-                run_cmd "使用官方脚本安装 Docker" "curl -fsSL https://get.docker.com | sh" && \
-                systemctl enable docker && systemctl start docker
-                print_info "将当前用户加入 docker 组: usermod -aG docker $USER"
-            else
-                if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-                    run_cmd "安装 Docker (系统包)" "apt-get update -qq && apt-get install -y docker.io docker-compose" && \
-                    systemctl enable docker && systemctl start docker
-                else
-                    run_cmd "安装 Docker (系统包)" "yum install -y docker docker-compose || dnf install -y docker docker-compose" && \
-                    systemctl enable docker && systemctl start docker
-                fi
-            fi
+            OPS_AUTO_CONFIRM=1
+            do_docker "$USER" 1 1
             ;;
         nodejs)
             read -r -p "输入 Node.js 版本 (如 18, 20, 22，默认 20): " node_ver
@@ -727,45 +719,18 @@ deploy_lemp() {
 }
 
 deploy_docker_dev() {
-    local os_type=$(detect_os)
+    OPS_AUTO_CONFIRM=1
 
     print_info "开始部署 Docker 开发环境..."
     echo ""
 
-    # 1. Docker
-    echo -e "${BOLD}[1/3] 安装 Docker${NC}"
-    if command_exists docker; then
-        print_info "Docker 已安装，跳过"
-    else
-        if confirm_yes "使用官方脚本安装 Docker?"; then
-            run_cmd "使用官方脚本安装 Docker" "curl -fsSL https://get.docker.com | sh"
-        else
-            if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-                run_cmd "安装 Docker (系统包)" "apt-get update -qq && apt-get install -y docker.io docker-compose"
-            else
-                run_cmd "安装 Docker (系统包)" "yum install -y docker docker-compose || dnf install -y docker docker-compose"
-            fi
-        fi
-        systemctl enable docker && systemctl start docker
-    fi
-    echo -e "  版本: $(docker --version 2>&1)"
+    # 1. Docker CE + Compose（使用 init-software.sh 的 do_docker）
+    echo -e "${BOLD}[1/3] 安装 Docker CE + Compose${NC}"
+    do_docker "" 1 1
     echo ""
 
-    # 2. Docker Compose
-    echo -e "${BOLD}[2/3] 安装 Docker Compose${NC}"
-    if command_exists docker-compose || docker compose version &>/dev/null; then
-        print_info "Docker Compose 已安装，跳过"
-    else
-        if [ "$os_type" = "ubuntu" ] || [ "$os_type" = "debian" ]; then
-            run_cmd "安装 Docker Compose" "apt-get install -y docker-compose-plugin 2>/dev/null || apt-get install -y docker-compose"
-        else
-            run_cmd "安装 Docker Compose" "yum install -y docker-compose-plugin || dnf install -y docker-compose-plugin"
-        fi
-    fi
-    echo ""
-
-    # 3. Portainer
-    echo -e "${BOLD}[3/3] 安装 Portainer (可选)${NC}"
+    # 2. Portainer
+    echo -e "${BOLD}[2/2] 安装 Portainer (可选)${NC}"
     if confirm_yes "是否安装 Portainer 管理面板?"; then
         docker volume create portainer_data 2>/dev/null
         run_cmd "启动 Portainer 容器" "docker run -d -p 9000:9000 -p 9443:9443 --name portainer --restart=unless-stopped -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:latest"

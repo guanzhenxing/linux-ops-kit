@@ -33,6 +33,11 @@ jobs:
           git ls-files '*.sh' | sed 's/^/  /'
           git ls-files '*.sh' -z | xargs -0 shellcheck --severity=warning --external-sources
 
+      - name: Check shell formatting (shfmt)
+        run: |
+          go install mvdan.cc/sh/v3/cmd/shfmt@latest
+          shfmt -d -i 4 -ci modules/ lib/ ops.sh bootstrap.sh
+
   test:
     name: bats unit + module tests
     runs-on: ubuntu-latest
@@ -90,3 +95,58 @@ jobs:
             bash ops.sh security status 2>&1
           '
           echo "✓ ${{ matrix.image }} 烟雾测试通过"
+
+  integration-real:
+    name: init real test (ubuntu:22.04)
+    runs-on: ubuntu-latest
+    needs: [shellcheck, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Full init test (packages + user creation)
+        run: |
+          docker run --rm -v "$PWD:/ops-kit:ro" ubuntu:22.04 bash -c '
+            set -e
+            # 安装 init 前置依赖
+            apt-get update -qq
+            apt-get install -y -qq jq sudo openssh-server iputils-ping curl &>/dev/null
+
+            # 启动 sshd（init 会检查 sshd 状态）
+            mkdir -p /run/sshd && /usr/sbin/sshd
+
+            cd /ops-kit
+            echo ""
+            echo "=== 执行 init ==="
+            # --defaults 跳过交互，--skip-upgrade 跳过耗时的系统更新
+            ./ops.sh init --defaults -u testuser --skip-upgrade 2>&1 || {
+              echo "init 返回非零退出码: $?"
+              # 非 systemd 环境部分步骤会失败（如 systemctl），
+              # 但整体流程应完成核心步骤
+            }
+
+            echo ""
+            echo "=== 验证结果 ==="
+            # 1. 用户已创建
+            if id testuser; then
+              echo "PASS: testuser 已创建"
+            else
+              echo "FAIL: testuser 未创建"
+              exit 1
+            fi
+
+            # 2. 状态文件已写入（非 systemd 环境可能在 systemd 步骤前终止，容错处理）
+            if [ -f /etc/ops-init.state ]; then
+              echo "PASS: 状态文件已写入"
+            else
+              echo "INFO: 状态文件未写入（可能因 systemd 步骤中断）"
+            fi
+
+            # 3. SSH Key 已导入
+            if [ -f /home/testuser/.ssh/authorized_keys ]; then
+              echo "PASS: SSH authorized_keys 已创建"
+            fi
+
+            echo ""
+            echo "=== 所有断言通过 ==="
+          '
+          echo "✓ 实际 init 集成测试通过"

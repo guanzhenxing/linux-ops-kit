@@ -54,6 +54,25 @@ preflight() {
     info "系统: ${OS_PRETTY}"
 }
 
+
+# ---------- 0.6 可选：完整性校验 ----------
+verify_checksum() {
+    if [[ "${VERIFY_SHA256:-}" != "1" ]]; then
+        return 0
+    fi
+    if [[ -z "${EXPECTED_SHA256:-}" ]]; then
+        warn "VERIFY_SHA256=1 但未设置 EXPECTED_SHA256，跳过校验"
+        return 0
+    fi
+    info "正在校验引导脚本完整性..."
+    local actual
+    actual=$(curl -fsSL "https://raw.githubusercontent.com/guanzhenxing/linux-ops-kit/${BRANCH}/bootstrap.sh" | sha256sum | awk '{print $1}')
+    if [[ "$actual" != "$EXPECTED_SHA256" ]]; then
+        die "SHA256 校验失败！期望: ${EXPECTED_SHA256:0:16}... 实际: ${actual:0:16}..."
+    fi
+    info "SHA256 校验通过"
+}
+
 # ---------- 2. 安装 git ----------
 ensure_git() {
     if command -v git &>/dev/null; then
@@ -161,6 +180,7 @@ main() {
     echo ""
 
     preflight
+    verify_checksum
     ensure_git
     clone_repo
     verify

@@ -34,7 +34,7 @@ source "${SCRIPT_DIR}/modules/init-system.sh"
 source "${SCRIPT_DIR}/modules/init-user.sh"
 source "${SCRIPT_DIR}/modules/init-security.sh"
 source "${SCRIPT_DIR}/modules/init-software.sh"
-
+source "${SCRIPT_DIR}/lib/version.sh"
 VERSION="${VERSION:-2.0.0}"
 
 # ==================== 默认值 ====================

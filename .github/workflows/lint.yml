@@ -107,7 +107,7 @@ jobs:
             echo ""
             echo "=== security 模块 (只读) ==="
             check "security status"  bash ./ops.sh security status
-            check "security audit"   bash -c "./ops.sh security audit || [ $? -eq 1 ]"
+            check "security audit"   bash -c "./ops.sh security audit || [ \$? -eq 1 ]"
 
             echo ""
             echo "=== 各模块帮助输出 ==="
@@ -129,8 +129,8 @@ jobs:
             [ -f data/data.json ] && { ((pass++)); echo "  PASS  data.json"; } || { ((fail++)); echo "  FAIL  data.json missing"; }
 
             echo ""
-            echo "=== 结果: \$pass 通过 / \$fail 失败 ==="
-            [ "\$fail" -eq 0 ]
+            echo "=== 结果: $pass 通过 / $fail 失败 ==="
+            [ "$fail" -eq 0 ]
           '
 
   integration:
